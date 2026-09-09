@@ -19,14 +19,14 @@
     8.0
   ],
   "declared_alpha_on_grid_edge": true,
-  "mean_predicted_learned": 3.1,
+  "mean_predicted_learned": 188.7,
   "mean_predicted_declared": 2.0,
   "declared_edges": 281,
   "learned_edges": 2790,
   "mean_actual_volume": 264.7,
-  "rmse_learned": 301.81,
+  "rmse_learned": 261.03,
   "rmse_declared": 302.77,
-  "relative_improvement": 0.0032,
+  "relative_improvement": 0.1378,
   "predicted": ">= 0.15 relative improvement",
   "H2_PASSED": false
 }

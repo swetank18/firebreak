@@ -54,7 +54,7 @@ def _events(args):
     return runner.run(g, hazard, seed=seed, tick_s=TICK)
 
 
-def declared_kernel(g, alpha: float) -> Kernel:
+def declared_kernel(g, alpha: float, mu: dict[str, float]) -> Kernel:
     """The expert-elicited matrix: uniform strength on every declared edge.
 
     Flow-sibling relations get NOTHING, because a declared interdependency
@@ -62,6 +62,14 @@ def declared_kernel(g, alpha: float) -> Kernel:
     interdependency anybody writes down. That is not a handicap invented for
     this comparison; it is the actual content of the baseline, and it is most of
     why the mined kernel wins. Reported as such.
+
+    It is given THE SAME BACKGROUND RATE `mu` as the learned kernel, and that
+    matters. The background term is a base failure rate any operator can compute
+    by counting; it is not the thing under test. Withholding it would have
+    credited the Hawkes background fix — worth more here than the whole
+    interdependency structure — to "learning from near-misses", and the measured
+    margin would have been mostly our own bookkeeping. H2 is a question about
+    interdependency structure, so only the structure differs.
     """
     edges = {}
     for e in g.edges:
@@ -75,7 +83,7 @@ def declared_kernel(g, alpha: float) -> Kernel:
     return Kernel(
         kernel_id=f"declared-a{alpha:.3f}", city_id=g.city_id, corpus_id="declared",
         fitted_at=datetime.now(timezone.utc), edges=edges,
-        mu={n.id: 0.0 for n in g.nodes}, spectral_radius=0.0,
+        mu=dict(mu), spectral_radius=0.0,
     )
 
 
@@ -135,10 +143,10 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
     # the largest value offered, with RMSE still falling monotonically across the
     # whole grid — which means the baseline was capped by the grid rather than
     # calibrated, and any margin over it would have been partly our doing.
-    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0]
+    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 15.0, 30.0]
     best_alpha, best_rmse = grid[0], float("inf")
     for alpha in grid:
-        dk = declared_kernel(g, alpha)
+        dk = declared_kernel(g, alpha, learned.mu)
         with mp.Pool(min(mp.cpu_count(), 12)) as pool:
             rows = pool.map(_predict, [(s, learned, dk) for s in train], chunksize=1)
         act = np.array([r[0] for r in rows])
@@ -151,7 +159,7 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
     if best_alpha in (grid[0], grid[-1]):
         print(f"  WARNING: chosen alpha sits on the edge of the grid {grid} — the declared "
               "baseline may be grid-capped rather than calibrated, which would flatter us.")
-    dk = declared_kernel(g, best_alpha)
+    dk = declared_kernel(g, best_alpha, learned.mu)
 
     print(f"scoring {len(test)} held-out scenarios...")
     with mp.Pool(min(mp.cpu_count(), 12)) as pool:
@@ -191,7 +199,8 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         "question: **how many more assets fail after this moment?**", "",
         f"- train: {len(train)} scenarios · test: {len(test)} held out, fresh seed range",
         f"- declared matrix: {len(dk.edges)} declared edges, uniform alpha = {best_alpha} "
-        "(calibrated on train, so it does not lose for want of a scale factor)",
+        "(calibrated on train, so it does not lose for want of a scale factor), and **the "
+        "same background rate as the learned kernel** — the base rate is not what H2 tests",
         f"- learned kernel: {len(learned.edges)} edges mined from near-misses",
         f"- mean actual cascade volume: **{actual.mean():.1f}** assets, against "
         f"{lrn.mean():.1f} predicted by the learned kernel and {dec.mean():.1f} by the "

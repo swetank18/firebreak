@@ -9,55 +9,136 @@
       "mechanism": "do nothing",
       "damage": 9308690.3,
       "prevented": 0.0,
+      "prevented_ci": [
+        0.0,
+        0.0
+      ],
       "prevented_pct": 0.0,
+      "vs_chance": 19957.0,
+      "vs_chance_ci": [
+        -61687.9,
+        106651.7
+      ],
+      "beats_chance_95": false,
       "hosp_hours_saved": 0.0,
       "oracle_captured_pct": 0.0
+    },
+    {
+      "arm": "AR",
+      "mechanism": "**random 5 assets (chance)**",
+      "damage": 9328647.3,
+      "prevented": -19957.0,
+      "prevented_ci": [
+        -106651.7,
+        61687.9
+      ],
+      "prevented_pct": -0.21,
+      "vs_chance": 0.0,
+      "vs_chance_ci": [
+        0.0,
+        0.0
+      ],
+      "beats_chance_95": false,
+      "hosp_hours_saved": 0.17,
+      "oracle_captured_pct": -0.9
     },
     {
       "arm": "A1",
       "mechanism": "rank by anomaly score",
       "damage": 9241688.3,
       "prevented": 67002.0,
+      "prevented_ci": [
+        -783.8,
+        150997.8
+      ],
       "prevented_pct": 0.72,
+      "vs_chance": 86959.0,
+      "vs_chance_ci": [
+        -29438.8,
+        208073.0
+      ],
+      "beats_chance_95": false,
       "hosp_hours_saved": 4.08,
-      "oracle_captured_pct": 4.9
+      "oracle_captured_pct": 3.1
     },
     {
       "arm": "A2",
       "mechanism": "+ static betweenness",
       "damage": 8329791.5,
       "prevented": 978898.8,
+      "prevented_ci": [
+        -8133.5,
+        2395642.8
+      ],
       "prevented_pct": 10.52,
+      "vs_chance": 998855.8,
+      "vs_chance_ci": [
+        -11750.1,
+        2423397.8
+      ],
+      "beats_chance_95": false,
       "hosp_hours_saved": 3.03,
-      "oracle_captured_pct": 8.5
+      "oracle_captured_pct": 45.8
     },
     {
       "arm": "A3",
       "mechanism": "+ branching ratio",
       "damage": 9275330.9,
       "prevented": 33359.4,
+      "prevented_ci": [
+        -73226.4,
+        155773.6
+      ],
       "prevented_pct": 0.36,
+      "vs_chance": 53316.4,
+      "vs_chance_ci": [
+        -74440.1,
+        186539.9
+      ],
+      "beats_chance_95": false,
       "hosp_hours_saved": -0.05,
-      "oracle_captured_pct": -0.3
+      "oracle_captured_pct": 1.6
     },
     {
       "arm": "A4",
       "mechanism": "+ counterfactual search",
       "damage": 9317747.2,
       "prevented": -9056.9,
+      "prevented_ci": [
+        -133089.1,
+        75779.6
+      ],
       "prevented_pct": -0.1,
+      "vs_chance": 10900.1,
+      "vs_chance_ci": [
+        -148271.5,
+        140120.8
+      ],
+      "beats_chance_95": false,
       "hosp_hours_saved": 2.55,
-      "oracle_captured_pct": -3.3
+      "oracle_captured_pct": -0.4
     },
     {
       "arm": "A6",
       "mechanism": "oracle (perfect foresight)",
-      "damage": 6984177.3,
-      "prevented": 2324513.0,
-      "prevented_pct": 24.97,
-      "hosp_hours_saved": 8.69,
+      "damage": 7171090.3,
+      "prevented": 2137600.0,
+      "prevented_ci": [
+        935675.8,
+        3649535.9
+      ],
+      "prevented_pct": 22.96,
+      "vs_chance": 2157557.0,
+      "vs_chance_ci": [
+        937166.2,
+        3692341.1
+      ],
+      "beats_chance_95": true,
+      "hosp_hours_saved": 8.35,
       "oracle_captured_pct": 100.0
     }
   ],
+  "chance_arm": "AR",
+  "note": "Read vs_chance, not prevented. A random 5-asset pick already prevents damage; the only honest question is whether an arm beats it. Intervals are a paired bootstrap over scenarios.",
   "A5_note": "I3 (Tsinghua, arXiv 2503.02890) not reproduced \u2014 published numbers only. Stated rather than dropped."
 }

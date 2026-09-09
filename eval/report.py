@@ -52,8 +52,12 @@ def prereg_diff(r: dict) -> str:
     # Whether an arm beats a RANDOM five-asset pick is the prior question, and
     # for two arms the answer is no. Reported beside H3 because "prevented more
     # than doing nothing" is not the bar — a random pick clears that too.
+    def _beats(a: str) -> bool:
+        t = by.get(a, {})
+        return bool(t.get("significant_vs_chance", t.get("beats_chance_95")))
+
     chance_line = ", ".join(
-        f"{a}: {'beats chance' if by.get(a, {}).get('beats_chance_95') else '**not distinguishable from chance**'}"
+        f"{a}: {'beats chance' if _beats(a) else '**not distinguishable from chance**'}"
         for a in ("A1", "A2", "A3", "A4"))
 
     # Counted, never asserted. A sentence like "two of the four went against us"
@@ -197,15 +201,18 @@ def results_md(r: dict) -> str:
         "## 5. Does picking the firebreak beat picking the big node? (`eval/arms.py`)", "",
         f"- {arms['n_scenarios']} held-out scenarios · budget {arms['budget']} interventions · "
         "applied in the engine and re-run on the same seed with paired randomness", "",
-        "**Read the `vs chance` column.** Protecting five assets at random already prevents",
-        "damage; the only honest question is whether an arm beats that.", "",
-        "| arm | mechanism | prevented | 95% CI | vs chance | beats chance | % of oracle |",
-        "|---|---|---|---|---|---|---|",
-        *[f"| {t['arm']} | {t['mechanism']} | {t['prevented']:,.0f} | "
-          f"[{t['prevented_ci'][0]:,.0f}, {t['prevented_ci'][1]:,.0f}] | "
-          f"{t['vs_chance']:,.0f} | "
-          f"{'—' if t['arm'] in ('A0', 'AR') else ('**yes**' if t['beats_chance_95'] else 'no')} | "
-          f"{t['oracle_captured_pct']:.0f}% |" for t in arms["arms"]],
+        "**Read the `vs chance` columns.** Protecting five assets at random already prevents",
+        "damage; the only honest question is whether an arm beats that. Damage prevented is",
+        "heavy-tailed across scenarios, so the verdict is a Wilcoxon signed-rank test on the",
+        "paired per-scenario difference, Holm-corrected across the four arms tested.", "",
+        "| arm | mechanism | prevented | vs chance (mean) | median | win rate | p (Holm) | beats chance | % of oracle |",
+        "|---|---|---|---|---|---|---|---|---|",
+        *[f"| {t['arm']} | {t['mechanism']} | {t['prevented']:,.0f} | {t['vs_chance']:,.0f} | "
+          + (("— | — | — | — | ") if t["arm"] in ("A0", "AR") else
+             (f"{t.get('median_vs_chance', 0):,.0f} | {t.get('win_rate_vs_chance', 0):.0%} | "
+              f"{(t.get('p_holm') if t.get('p_holm') is not None else float('nan')):.3f} | "
+              f"{'**yes**' if t.get('significant_vs_chance') else 'no'} | "))
+          + f"{t['oracle_captured_pct']:.0f}% |" for t in arms["arms"]],
         "",
         f"{arms['A5_note']}", "",
         "## 6. What we said before we looked", "",
