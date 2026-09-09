@@ -72,10 +72,35 @@
   var camera = new THREE.PerspectiveCamera(42, 1, 1, 2000);
   var renderer = new THREE.WebGLRenderer({ canvas: $('view'), antialias: true, alpha: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  scene.add(new THREE.HemisphereLight(dark ? 0x8fa8c8 : 0xffffff, dark ? 0x0a0f14 : 0x9aa7b4, dark ? 0.75 : 0.95));
-  var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.55 : 0.7);
-  sun.position.set(-90, 130, 70);
+  // Sky. A monsoon sky is not a gradient for decoration — the storm darkens as
+  // the water rises, which is the one non-user-triggered motion in the scene
+  // and it is driven by the exported flood level.
+  var CLEAR = new THREE.Color(dark ? 0x101a24 : 0xb9c6d2);
+  var STORM = new THREE.Color(dark ? 0x070c12 : 0x5d6b78);
+  var skyGeo = new THREE.SphereGeometry(900, 24, 16);
+  var skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false,
+    uniforms: { top: { value: STORM.clone() }, bot: { value: CLEAR.clone() } },
+    vertexShader: 'varying float h; void main(){ h = normalize(position).y;' +
+      ' gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 bot; varying float h;' +
+      ' void main(){ gl_FragColor = vec4(mix(bot, top, clamp(h*1.3+0.25,0.0,1.0)), 1.0); }'
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+
+  var hemi = new THREE.HemisphereLight(dark ? 0x8fa8c8 : 0xffffff, dark ? 0x0a0f14 : 0x8f9daa, dark ? 0.62 : 0.85);
+  scene.add(hemi);
+  var sun = new THREE.DirectionalLight(0xffffff, dark ? 0.85 : 1.0);
+  sun.position.set(-110, 150, 80);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  var sc = sun.shadow.camera;
+  sc.left = -SIZE * 0.8; sc.right = SIZE * 0.8;
+  sc.top = SIZE * 0.8; sc.bottom = -SIZE * 0.8;
+  sc.near = 1; sc.far = 500; sc.updateProjectionMatrix();
   scene.add(sun);
 
   // ---- terrain: the elevation proxy, and nothing invented on top of it
@@ -98,7 +123,9 @@
   }
   tGeo.setAttribute('color', new THREE.Float32BufferAttribute(tCol, 3));
   tGeo.computeVertexNormals();
-  scene.add(new THREE.Mesh(tGeo, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  var terrain = new THREE.Mesh(tGeo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  terrain.receiveShadow = true;
+  scene.add(terrain);
 
   // ---- water: the hazard field itself, raised to the exported level
   var wGeo = new THREE.PlaneGeometry(SIZE * 1.45, SIZE * 1.45, 60, 60);
@@ -119,6 +146,8 @@
   var assets = new THREE.InstancedMesh(
     aGeo, new THREE.MeshLambertMaterial({}), N);
   assets.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  assets.castShadow = true;
+  assets.receiveShadow = true;
   scene.add(assets);
   var dummy = new THREE.Object3D();
   var COLOR = {}, FAILED = new THREE.Color(dark ? 0xff5a45 : 0xb02a1a);
@@ -159,27 +188,155 @@
     if (assets.instanceColor) assets.instanceColor.needsUpdate = true;
   }
 
-  // ---- dependency edges: the couplings failure actually travels along
-  var lg = new THREE.BufferGeometry(), lpts = [];
-  (DATA.deps || []).forEach(function (e) {
-    var a = byId[e.s], b = byId[e.d];
-    if (!a || !b) return;
+  // ---- the networks the city is actually made of.
+  // 1,400 road-to-road links, 312 in the grid, the mains and the backhaul. This
+  // is the difference between a city and a scatter of markers, and it was in the
+  // topology all along — it just was not being drawn.
+  function networkLayer(pairs, colour, opacity, lift) {
+    var g = new THREE.BufferGeometry(), pts = [];
+    pairs.forEach(function (e) {
+      var a = nodes[e[0]], b = nodes[e[1]];
+      if (!a || !b) return;
+      pts.push(px(a), elevOf(a) * ELEV + lift, pz(a),
+               px(b), elevOf(b) * ELEV + lift, pz(b));
+    });
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+    var m = new THREE.LineSegments(g, new THREE.LineBasicMaterial({
+      color: new THREE.Color(colour), transparent: true, opacity: opacity }));
+    scene.add(m);
+    return m;
+  }
+  var flowPairs = DATA.flow || [];
+  var roadNet = flowPairs.filter(function (e) {
+    return nodes[e[0]].l === 'transport' && nodes[e[1]].l === 'transport'; });
+  var gridNet = flowPairs.filter(function (e) {
+    return nodes[e[0]].l === 'power' && nodes[e[1]].l === 'power'; });
+  var otherNet = flowPairs.filter(function (e) {
+    var la = nodes[e[0]].l; return la !== 'transport' && la !== 'power'; });
+  // The roads carry the city's shape, so they are the network that shows. The
+  // grid crosses the whole map in long spans and at any real opacity it becomes
+  // a spiderweb over everything else — it is drawn faintly, as context.
+  networkLayer(roadNet, dark ? 0x8d9aa6 : 0x74818d, dark ? 0.9 : 0.75, 0.16);
+  networkLayer(gridNet, col('power'), 0.16, 0.9);
+  networkLayer(otherNet, dark ? 0x5c7f9e : 0x6d90ad, 0.18, 0.7);
+
+  // ---- dependency edges: the couplings failure travels along.
+  // Held as per-edge segment ranges so one can be lit up when failure crosses it.
+  var depPairs = DATA.depix || [];
+  var SEGS = 10;
+  var dg = new THREE.BufferGeometry(), dpts = [], dcols = [];
+  var restCol = new THREE.Color(dark ? 0x44566a : 0x9fb0c0);
+  depPairs.forEach(function (e) {
+    var a = nodes[e[0]], b = nodes[e[1]];
     var ax = px(a), ay = elevOf(a) * ELEV + shapeOf(a)[1] * 0.6, az = pz(a);
     var bx = px(b), by = elevOf(b) * ELEV + shapeOf(b)[1] * 0.6, bz = pz(b);
-    var lift = 6 + Math.hypot(bx - ax, bz - az) * 0.16;
+    var lift = 5 + Math.hypot(bx - ax, bz - az) * 0.18;
     var prev = null;
-    for (var s = 0; s <= 8; s++) {
-      var t = s / 8;
-      var p = [ax + (bx - ax) * t, ay + (by - ay) * t + Math.sin(Math.PI * t) * lift,
-               az + (bz - az) * t];
-      if (prev) lpts.push(prev[0], prev[1], prev[2], p[0], p[1], p[2]);
-      prev = p;
+    for (var k = 0; k <= SEGS; k++) {
+      var t = k / SEGS;
+      var pnt = [ax + (bx - ax) * t, ay + (by - ay) * t + Math.sin(Math.PI * t) * lift,
+                 az + (bz - az) * t];
+      if (prev) {
+        dpts.push(prev[0], prev[1], prev[2], pnt[0], pnt[1], pnt[2]);
+        dcols.push(restCol.r, restCol.g, restCol.b, restCol.r, restCol.g, restCol.b);
+      }
+      prev = pnt;
     }
   });
-  lg.setAttribute('position', new THREE.Float32BufferAttribute(lpts, 3));
-  scene.add(new THREE.LineSegments(lg, new THREE.LineBasicMaterial({
-    color: new THREE.Color(dark ? 0x4a5b6e : 0x9fb0c0), transparent: true, opacity: 0.3
-  })));
+  dg.setAttribute('position', new THREE.Float32BufferAttribute(dpts, 3));
+  dg.setAttribute('color', new THREE.Float32BufferAttribute(dcols, 3));
+  var depLines = new THREE.LineSegments(dg, new THREE.LineBasicMaterial({
+    vertexColors: true, transparent: true, opacity: 0.55 }));
+  scene.add(depLines);
+  var depColAttr = dg.attributes.color;
+
+  // ---- rain. It is a monsoon; the intensity follows the exported flood level,
+  // so the sky is doing the thing that is filling the streets rather than an
+  // effect running beside it.
+  // Each drop is a short falling STREAK. Rendered as points they read as a
+  // starfield, which is what the first pass looked like.
+  var RAIN = 5200, RAIN_H = 95, RAIN_LEN = 3.2;
+  var rainGeo = new THREE.BufferGeometry();
+  var rainPos = new Float32Array(RAIN * 6);            // two vertices per drop
+  var rainVel = new Float32Array(RAIN);
+  function seedDrop(i, y) {
+    var x = (Math.random() - 0.5) * SIZE * 1.25;
+    var z = (Math.random() - 0.5) * SIZE * 1.25;
+    var len = RAIN_LEN * (0.7 + Math.random() * 0.9);
+    rainPos[i * 6] = x; rainPos[i * 6 + 1] = y; rainPos[i * 6 + 2] = z;
+    rainPos[i * 6 + 3] = x + 0.6; rainPos[i * 6 + 4] = y + len; rainPos[i * 6 + 5] = z;
+    rainVel[i] = 85 + Math.random() * 95;
+  }
+  for (var r = 0; r < RAIN; r++) seedDrop(r, Math.random() * RAIN_H);
+  rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPos, 3));
+  var rain = new THREE.LineSegments(rainGeo, new THREE.LineBasicMaterial({
+    color: new THREE.Color(dark ? 0xa8cbe6 : 0x7796b2),
+    transparent: true, opacity: 0.0, depthWrite: false
+  }));
+  scene.add(rain);
+
+  // ---- hospital beacons.
+  // The pitch is "four hospitals go dark", and a hospital that has failed was
+  // previously a red box among nine hundred other boxes. A failed health asset
+  // raises a column of light, so the count on the panel has something on the
+  // map to point at from any camera angle.
+  // Hospitals only. Lighting all 62 health assets put a dozen columns on the map
+  // beside a counter reading 5, and a map that disagrees with its own number is
+  // worse than no map.
+  var healthIx = [];
+  nodes.forEach(function (n, i) { if (n.k === 'hospital') healthIx.push(i); });
+  var beamGeo = new THREE.CylinderGeometry(0.55, 0.55, 1, 8, 1, true);
+  beamGeo.translate(0, 0.5, 0);
+  var beams = new THREE.InstancedMesh(beamGeo, new THREE.MeshBasicMaterial({
+    color: new THREE.Color(dark ? 0xff7a5e : 0xc0392b), transparent: true,
+    opacity: 0.30, depthWrite: false, side: THREE.DoubleSide
+  }), healthIx.length);
+  beams.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  beams.renderOrder = 3;
+  scene.add(beams);
+  var beamDummy = new THREE.Object3D();
+  function paintBeams() {
+    for (var b = 0; b < healthIx.length; b++) {
+      var n = nodes[healthIx[b]];
+      var lit = !!state[n.id] && !hidden[n.l];
+      beamDummy.position.set(px(n), elevOf(n) * ELEV, pz(n));
+      beamDummy.scale.set(lit ? 1.7 : 0.0001, lit ? 80 : 0.0001, lit ? 1.7 : 0.0001);
+      beamDummy.updateMatrix();
+      beams.setMatrixAt(b, beamDummy.matrix);
+    }
+    beams.instanceMatrix.needsUpdate = true;
+  }
+
+  // ---- cascade rings: a failure is an event, and the eye should catch it.
+  var RINGS = 26, ringPool = [], ringAge = [];
+  var ringGeo = new THREE.RingGeometry(0.6, 1.0, 40);
+  ringGeo.rotateX(-Math.PI / 2);
+  for (var q = 0; q < RINGS; q++) {
+    var m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({
+      color: new THREE.Color(dark ? 0xff6a52 : 0xb02a1a), transparent: true,
+      opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+    m.visible = false; scene.add(m); ringPool.push(m); ringAge.push(0);
+  }
+  var ringNext = 0;
+  function ringAt(n) {
+    var m = ringPool[ringNext], i = ringNext;
+    ringNext = (ringNext + 1) % RINGS;
+    m.position.set(px(n), elevOf(n) * ELEV + 0.4, pz(n));
+    m.visible = true; ringAge[i] = 0;
+  }
+
+  // ---- which dependency edge did failure just cross?
+  // Not a simulation: both endpoints' failure times are fields in the file, and
+  // an edge is lit when the parent fell first and the child has just followed.
+  var depFlash = [];                                   // {edge index, age}
+  function flashDep(childIdx) {
+    for (var k = 0; k < depPairs.length; k++) {
+      if (depPairs[k][0] !== childIdx) continue;
+      var parent = nodes[depPairs[k][1]];
+      if (state[parent.id]) depFlash.push({ e: k, age: 0 });
+    }
+  }
+  var flashCol = new THREE.Color(dark ? 0xffb057 : 0xc47f10);
 
   // ---------------------------------------------------------------- camera
   var orbit = { az: -0.52, el: 0.46, r: SIZE * 1.12, tx: 0, ty: ELEV * 0.45, tz: 0 };
@@ -245,9 +402,19 @@
     var tl = RUNS[runKey].timeline;
     if (t < clock) { state = {}; cursor = 0; }
     clock = t;
+    var fresh = [];
     while (cursor < tl.length && tl[cursor].t <= clock) {
       var e = tl[cursor++];
-      if (byId[e.n]) state[e.n] = e;
+      if (byId[e.n]) { state[e.n] = e; fresh.push(e.n); }
+    }
+    // Only mark what just happened, and only when the clock is moving forward
+    // in normal-sized steps — scrubbing across three hours should not fire two
+    // hundred rings at once.
+    if (fresh.length && fresh.length < 40) {
+      for (var f = 0; f < fresh.length; f++) {
+        var nn = byId[fresh[f]];
+        if (nn) { ringAt(nn); flashDep(index[fresh[f]]); }
+      }
     }
     refresh();
   }
@@ -278,7 +445,7 @@
     // elevation range — not metres, because the model has no metres.
     $('waterLvl').textContent = lvl.toFixed(3);
     $('waterPct').textContent = Math.round(submergedPct() * 100) + '%';
-    counters(); paintAssets(); drawTrack();
+    counters(); paintAssets(); paintBeams(); drawTrack();
     var note = $('viewnote');
     if (runKey === 'do_nothing') note.hidden = true;
     else {
@@ -408,7 +575,7 @@
       b.addEventListener('click', function () {
         var l = b.dataset.layer; hidden[l] = !hidden[l];
         b.setAttribute('aria-pressed', String(!hidden[l]));
-        layout(); paintAssets();
+        layout(); paintAssets(); paintBeams();
       });
     });
   }
@@ -518,8 +685,64 @@
       if (clock + step >= T_END) { seekTo(T_END); stop(); $('play').textContent = 'Replay'; }
       else seekTo(clock + step);
     }
-    // water: level from the scenario, ripple from the clock
     var lvl = waterLevel();
+    var storm = Math.min(1, lvl / (FLOOD.peak || 1));
+
+    // rain follows the flood
+    rain.material.opacity = 0.06 + storm * 0.34;
+    var rp = rainGeo.attributes.position.array;
+    var fall = dt * (0.85 + storm * 1.2);
+    for (var i = 0; i < RAIN; i++) {
+      var dy = rainVel[i] * fall, dx = 13 * fall;
+      rp[i * 6 + 1] -= dy; rp[i * 6 + 4] -= dy;
+      rp[i * 6] -= dx; rp[i * 6 + 3] -= dx;
+      if (rp[i * 6 + 1] < 0) seedDrop(i, RAIN_H + Math.random() * 25);
+    }
+    rainGeo.attributes.position.needsUpdate = true;
+
+    // the storm closes in as the water rises
+    skyMat.uniforms.top.value.copy(CLEAR).lerp(STORM, storm * 0.85);
+    skyMat.uniforms.bot.value.copy(CLEAR).lerp(STORM, storm * 0.4);
+    scene.fog.color.copy(CLEAR).lerp(STORM, storm * 0.5);
+    scene.background.copy(scene.fog.color);
+    sun.intensity = (dark ? 0.9 : 1.05) * (1 - storm * 0.28);
+    hemi.intensity = (dark ? 0.72 : 0.9) * (1 - storm * 0.12);
+
+    // cascade rings expand and fade
+    for (var g2 = 0; g2 < RINGS; g2++) {
+      var m2 = ringPool[g2];
+      if (!m2.visible) continue;
+      ringAge[g2] += dt;
+      var a2 = ringAge[g2];
+      if (a2 > 1.6) { m2.visible = false; continue; }
+      var sc2 = 2 + a2 * 26;
+      m2.scale.set(sc2, 1, sc2);
+      m2.material.opacity = 0.75 * (1 - a2 / 1.6);
+    }
+
+    // dependency edges light up where failure just crossed them
+    if (depFlash.length) {
+      var keep = [];
+      for (var d2 = 0; d2 < depFlash.length; d2++) {
+        var fl2 = depFlash[d2]; fl2.age += dt;
+        var k2 = Math.max(0, 1 - fl2.age / 1.1);
+        var base = fl2.e * SEGS * 2;
+        for (var v2 = 0; v2 < SEGS * 2; v2++) {
+          var o2 = (base + v2) * 3;
+          depColAttr.array[o2] = restCol.r + (flashCol.r - restCol.r) * k2;
+          depColAttr.array[o2 + 1] = restCol.g + (flashCol.g - restCol.g) * k2;
+          depColAttr.array[o2 + 2] = restCol.b + (flashCol.b - restCol.b) * k2;
+        }
+        if (fl2.age < 1.1) keep.push(fl2);
+      }
+      depColAttr.needsUpdate = true;
+      depFlash = keep;
+    }
+
+    // gentle drift while playing, so the city reads as a place, not a diagram
+    if (playing && !drag) { orbit.az += dt * 0.018; applyCam(); }
+
+    // water: level from the scenario, ripple from the clock
     water.position.y = lvl * ELEV;
     water.visible = lvl > 0.001;
     var pos = wGeo.attributes.position, tsec = now / 1000;

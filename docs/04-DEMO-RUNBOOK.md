@@ -51,6 +51,8 @@ Stop. Do not thank them yet — take the question.
 ## Rules
 
 - **The renderer computes nothing.** Every number on screen is a field in the scenario file. The console shows live counts as the clock runs and the settled person-hours totals per run; it never scales a total by elapsed time to fake a running figure.
+- **If asked whether the flood is real:** the water level is the hazard field the engine used, on the same scale as each asset's elevation, so an asset is under water on screen exactly when it was being stressed in the simulation. The rain and the darkening sky are drawn, and their intensity is scaled by that same level. Say which is which — it is a better answer than implying the rainfall was modelled.
+- **Hospitals raise a column of light when they fail.** Five in the do-nothing run, four under Firebreak's action — that contrast is the pitch, visible on the map without reading the counter.
 - **Drive it from `/sim/`, not from the write-up.** The console is full-viewport and nothing scrolls, so there is no page to lose your place in on stage.
 - **3D at `/sim/`, 2D at `/sim/2d/`.** Both read the identical exported scenario and run the same six keys. three.js is vendored, so neither needs a network. If the projector cannot give a WebGL context the 3D view says so and links to the 2D one — check this on the venue machine before you present.
 - **A backup video is NOT yet recorded.** Listed as outstanding rather than assumed — see `docs/LIMITATIONS.md`.

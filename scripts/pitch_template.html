@@ -378,6 +378,15 @@ const DATA = __DATA__;
 
   function draw() {
     ctx.clearRect(0, 0, W, 500);
+    var flow = DATA.flow || [];
+    ctx.lineWidth = .5; ctx.strokeStyle = col('transport'); ctx.globalAlpha = .28;
+    ctx.beginPath();
+    for (var fi = 0; fi < flow.length; fi++) {
+      var ra = nodes[flow[fi][0]], rb = nodes[flow[fi][1]];
+      if (!ra || !rb || ra.l !== 'transport' || rb.l !== 'transport') continue;
+      ctx.moveTo(X(ra), Y(ra)); ctx.lineTo(X(rb), Y(rb));
+    }
+    ctx.stroke(); ctx.globalAlpha = 1;
     ctx.lineWidth = .6; ctx.strokeStyle = col('rule'); ctx.globalAlpha = .5;
     DATA.deps.forEach(e => {
       const a = idx[e.s], b = idx[e.d]; if (!a || !b) return;

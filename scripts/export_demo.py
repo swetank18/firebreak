@@ -188,6 +188,14 @@ def main() -> int:
               "e": round(float(elev.get(n.id, 0.5)), 4),
               "buf": int(n.buffer_s)} for n in g.nodes]
     deps = [{"s": e.src, "d": e.dst} for e in g.edges if e.relation == "depends_on"]
+    # Index pairs, for drawing. The road network is 1,400 of these and it is what
+    # makes the view read as a city rather than as a scatter of markers; the grid
+    # and the mains are the same story one layer down.
+    nidx = {n.id: i for i, n in enumerate(g.nodes)}
+    flow = [[nidx[e.src], nidx[e.dst]] for e in g.edges
+            if e.relation == "flow" and e.src in nidx and e.dst in nidx]
+    depix = [[nidx[e.src], nidx[e.dst]] for e in g.edges
+             if e.relation == "depends_on" and e.src in nidx and e.dst in nidx]
 
     tl0 = runs["do_nothing"]["timeline"]
     first = {r["n"]: r for r in tl0}
@@ -202,7 +210,7 @@ def main() -> int:
                     bestgap, pair = gap, ((a, b) if a[2] > b[2] else (b, a))
 
     payload = {
-        "city": g.city_id, "seed": seed, "nodes": nodes, "deps": deps, "flood": flood,
+        "city": g.city_id, "seed": seed, "nodes": nodes, "deps": deps, "flow": flow, "depix": depix, "flood": flood,
         "horizon_s": best["base"].horizon_s, "t_decide_s": best["t_dec"],
         "runs": runs,
         "timeline": tl0,          # kept: the 2D fallback reads this directly
