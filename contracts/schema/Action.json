@@ -1,0 +1,48 @@
+{
+  "properties": {
+    "cost": {
+      "description": "abstract units, from contracts/costs.json",
+      "minimum": 0.0,
+      "title": "Cost",
+      "type": "number"
+    },
+    "kind": {
+      "enum": [
+        "isolate",
+        "harden",
+        "reroute",
+        "preposition",
+        "shed"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "lead_time_s": {
+      "description": "delay until it takes effect once ordered",
+      "minimum": 0.0,
+      "title": "Lead Time S",
+      "type": "number"
+    },
+    "magnitude": {
+      "description": "kind-specific, normalised",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Magnitude",
+      "type": "number"
+    },
+    "target": {
+      "description": "Node.id or Edge.id",
+      "title": "Target",
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "target",
+    "magnitude",
+    "cost",
+    "lead_time_s"
+  ],
+  "title": "Action",
+  "type": "object"
+}

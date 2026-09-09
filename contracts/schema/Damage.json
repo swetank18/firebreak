@@ -1,0 +1,32 @@
+{
+  "description": "Never collapse to rupees.\n\nA synthetic money figure is the fastest way to lose a judge who works in\ninfrastructure. Report the vector; derive one scalar for ranking from\nversioned weights that appear on a slide.",
+  "properties": {
+    "hospital_critical_hours": {
+      "default": 0.0,
+      "description": "facility-hours where a health node lost power OR water",
+      "minimum": 0.0,
+      "title": "Hospital Critical Hours",
+      "type": "number"
+    },
+    "people_affected": {
+      "default": 0,
+      "minimum": 0,
+      "title": "People Affected",
+      "type": "integer"
+    },
+    "person_hours_no_power": {
+      "default": 0.0,
+      "minimum": 0.0,
+      "title": "Person Hours No Power",
+      "type": "number"
+    },
+    "person_hours_no_water": {
+      "default": 0.0,
+      "minimum": 0.0,
+      "title": "Person Hours No Water",
+      "type": "number"
+    }
+  },
+  "title": "Damage",
+  "type": "object"
+}

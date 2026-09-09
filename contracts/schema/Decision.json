@@ -1,0 +1,272 @@
+{
+  "$defs": {
+    "Action": {
+      "properties": {
+        "cost": {
+          "description": "abstract units, from contracts/costs.json",
+          "minimum": 0.0,
+          "title": "Cost",
+          "type": "number"
+        },
+        "kind": {
+          "enum": [
+            "isolate",
+            "harden",
+            "reroute",
+            "preposition",
+            "shed"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "lead_time_s": {
+          "description": "delay until it takes effect once ordered",
+          "minimum": 0.0,
+          "title": "Lead Time S",
+          "type": "number"
+        },
+        "magnitude": {
+          "description": "kind-specific, normalised",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Magnitude",
+          "type": "number"
+        },
+        "target": {
+          "description": "Node.id or Edge.id",
+          "title": "Target",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "target",
+        "magnitude",
+        "cost",
+        "lead_time_s"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "Criticality": {
+      "description": "Why one alarm matters and an identical-scoring one does not.",
+      "properties": {
+        "DANGER_THRESHOLD": {
+          "default": 1.0,
+          "title": "Danger Threshold",
+          "type": "number"
+        },
+        "branching_ratio": {
+          "description": "n_i = sum_j alpha_ij * s_j(t). THE HEADLINE NUMBER. Above 1.0 the cascade grows; below it dies. This is the whole answer to 'distinguish normal abnormality from dangerous abnormality'.",
+          "minimum": 0.0,
+          "title": "Branching Ratio",
+          "type": "number"
+        },
+        "ci_high": {
+          "title": "Ci High",
+          "type": "number"
+        },
+        "ci_low": {
+          "description": "bootstrap CI on branching_ratio",
+          "title": "Ci Low",
+          "type": "number"
+        },
+        "expected_damage": {
+          "$ref": "#/$defs/Damage"
+        },
+        "expected_reach": {
+          "description": "E[nodes failed]",
+          "minimum": 0.0,
+          "title": "Expected Reach",
+          "type": "number"
+        },
+        "n_rollouts": {
+          "minimum": 0,
+          "title": "N Rollouts",
+          "type": "integer"
+        },
+        "node_id": {
+          "title": "Node Id",
+          "type": "string"
+        },
+        "p_cascade": {
+          "description": "P(chain from here reaches CATASTROPHE_HOPS)",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Cascade",
+          "type": "number"
+        },
+        "t": {
+          "title": "T",
+          "type": "number"
+        },
+        "time_to_critical_s": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "None if it never goes critical within the horizon",
+          "title": "Time To Critical S"
+        }
+      },
+      "required": [
+        "node_id",
+        "t",
+        "branching_ratio",
+        "p_cascade",
+        "expected_reach",
+        "expected_damage",
+        "ci_low",
+        "ci_high",
+        "n_rollouts"
+      ],
+      "title": "Criticality",
+      "type": "object"
+    },
+    "Damage": {
+      "description": "Never collapse to rupees.\n\nA synthetic money figure is the fastest way to lose a judge who works in\ninfrastructure. Report the vector; derive one scalar for ranking from\nversioned weights that appear on a slide.",
+      "properties": {
+        "hospital_critical_hours": {
+          "default": 0.0,
+          "description": "facility-hours where a health node lost power OR water",
+          "minimum": 0.0,
+          "title": "Hospital Critical Hours",
+          "type": "number"
+        },
+        "people_affected": {
+          "default": 0,
+          "minimum": 0,
+          "title": "People Affected",
+          "type": "integer"
+        },
+        "person_hours_no_power": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Power",
+          "type": "number"
+        },
+        "person_hours_no_water": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Water",
+          "type": "number"
+        }
+      },
+      "title": "Damage",
+      "type": "object"
+    },
+    "Intervention": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/Action"
+        },
+        "benefit_per_cost": {
+          "title": "Benefit Per Cost",
+          "type": "number"
+        },
+        "damage_prevented": {
+          "$ref": "#/$defs/Damage"
+        },
+        "damage_prevented_headline": {
+          "title": "Damage Prevented Headline",
+          "type": "number"
+        },
+        "deadline_s": {
+          "description": "latest t at which ordering this still yields >= 90% of its current benefit. A prediction without a deadline is a weather forecast; with one it is an instruction.",
+          "title": "Deadline S",
+          "type": "number"
+        },
+        "n_rollouts": {
+          "minimum": 0,
+          "title": "N Rollouts",
+          "type": "integer"
+        },
+        "p_success": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Success",
+          "type": "number"
+        },
+        "rationale": {
+          "description": "ordered, human-readable, generated BY TEMPLATE from rollout statistics. Never LLM-authored. A decision about which neighbourhood loses water has to be explainable line by line.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Rationale",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action",
+        "damage_prevented",
+        "damage_prevented_headline",
+        "benefit_per_cost",
+        "p_success",
+        "deadline_s",
+        "rationale",
+        "n_rollouts"
+      ],
+      "title": "Intervention",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "compute_ms": {
+      "title": "Compute Ms",
+      "type": "number"
+    },
+    "decision_id": {
+      "title": "Decision Id",
+      "type": "string"
+    },
+    "do_nothing_damage": {
+      "$ref": "#/$defs/Damage",
+      "description": "MANDATORY on every Decision. A recommendation without its counterfactual is a suggestion, and this project is about consequences."
+    },
+    "ranked": {
+      "description": "descending benefit_per_cost; top 5",
+      "items": {
+        "$ref": "#/$defs/Intervention"
+      },
+      "title": "Ranked",
+      "type": "array"
+    },
+    "scenario_id": {
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    },
+    "t": {
+      "title": "T",
+      "type": "number"
+    },
+    "trigger": {
+      "description": "what made us decide now",
+      "items": {
+        "$ref": "#/$defs/Criticality"
+      },
+      "title": "Trigger",
+      "type": "array"
+    }
+  },
+  "required": [
+    "decision_id",
+    "scenario_id",
+    "t",
+    "trigger",
+    "do_nothing_damage",
+    "ranked",
+    "compute_ms",
+    "seed"
+  ],
+  "title": "Decision",
+  "type": "object"
+}

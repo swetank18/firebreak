@@ -1,0 +1,109 @@
+{
+  "$defs": {
+    "EdgeKernel": {
+      "properties": {
+        "alpha": {
+          "description": "expected failures at dst per failure at src",
+          "minimum": 0.0,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "beta": {
+          "description": "decay rate; 1/beta is mean propagation delay in seconds",
+          "exclusiveMinimum": 0.0,
+          "title": "Beta",
+          "type": "number"
+        },
+        "ci_high": {
+          "title": "Ci High",
+          "type": "number"
+        },
+        "ci_low": {
+          "description": "bootstrap CI on alpha",
+          "title": "Ci Low",
+          "type": "number"
+        },
+        "edge_id": {
+          "title": "Edge Id",
+          "type": "string"
+        },
+        "estimator": {
+          "enum": [
+            "counting",
+            "mle"
+          ],
+          "title": "Estimator",
+          "type": "string"
+        },
+        "n_obs": {
+          "description": "near-miss chains supporting this estimate",
+          "minimum": 0,
+          "title": "N Obs",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "edge_id",
+        "alpha",
+        "beta",
+        "n_obs",
+        "ci_low",
+        "ci_high",
+        "estimator"
+      ],
+      "title": "EdgeKernel",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "city_id": {
+      "title": "City Id",
+      "type": "string"
+    },
+    "corpus_id": {
+      "title": "Corpus Id",
+      "type": "string"
+    },
+    "edges": {
+      "additionalProperties": {
+        "$ref": "#/$defs/EdgeKernel"
+      },
+      "description": "edge_id -> fitted kernel",
+      "title": "Edges",
+      "type": "object"
+    },
+    "fitted_at": {
+      "format": "date-time",
+      "title": "Fitted At",
+      "type": "string"
+    },
+    "kernel_id": {
+      "title": "Kernel Id",
+      "type": "string"
+    },
+    "mu": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "node_id -> background intensity",
+      "title": "Mu",
+      "type": "object"
+    },
+    "spectral_radius": {
+      "description": "rho(G) where G_ij = alpha_ij. >= 1 means globally supercritical.",
+      "title": "Spectral Radius",
+      "type": "number"
+    }
+  },
+  "required": [
+    "kernel_id",
+    "city_id",
+    "corpus_id",
+    "fitted_at",
+    "edges",
+    "mu",
+    "spectral_radius"
+  ],
+  "title": "Kernel",
+  "type": "object"
+}

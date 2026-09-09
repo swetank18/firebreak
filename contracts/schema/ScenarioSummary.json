@@ -1,0 +1,60 @@
+{
+  "properties": {
+    "arm": {
+      "title": "Arm",
+      "type": "string"
+    },
+    "city_id": {
+      "title": "City Id",
+      "type": "string"
+    },
+    "hazard": {
+      "enum": [
+        "monsoon_flood",
+        "heatwave",
+        "equipment_age",
+        "cyber",
+        "none"
+      ],
+      "title": "Hazard",
+      "type": "string"
+    },
+    "horizon_s": {
+      "title": "Horizon S",
+      "type": "number"
+    },
+    "max_hops": {
+      "title": "Max Hops",
+      "type": "integer"
+    },
+    "n_decisions": {
+      "title": "N Decisions",
+      "type": "integer"
+    },
+    "n_events": {
+      "title": "N Events",
+      "type": "integer"
+    },
+    "scenario_id": {
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "seed": {
+      "title": "Seed",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "scenario_id",
+    "city_id",
+    "seed",
+    "hazard",
+    "arm",
+    "n_events",
+    "n_decisions",
+    "max_hops",
+    "horizon_s"
+  ],
+  "title": "ScenarioSummary",
+  "type": "object"
+}

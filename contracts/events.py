@@ -12,7 +12,7 @@ EventKind = Literal["anomaly", "degraded", "failed", "restored"]
 class Event(BaseModel):
     """One observation on one node at one time.
 
-    Two fields are GROUND TRUTH ONLY and must be stripped by platform/redact.py
+    Two fields are GROUND TRUTH ONLY and must be stripped by service/redact.py
     before any inference or decision code sees them: `cause`, and rows with
     `observed=False`. This is the leakage boundary and it is worth more than any
     model in the repo.

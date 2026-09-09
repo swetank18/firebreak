@@ -1,0 +1,90 @@
+{
+  "$defs": {
+    "Damage": {
+      "description": "Never collapse to rupees.\n\nA synthetic money figure is the fastest way to lose a judge who works in\ninfrastructure. Report the vector; derive one scalar for ranking from\nversioned weights that appear on a slide.",
+      "properties": {
+        "hospital_critical_hours": {
+          "default": 0.0,
+          "description": "facility-hours where a health node lost power OR water",
+          "minimum": 0.0,
+          "title": "Hospital Critical Hours",
+          "type": "number"
+        },
+        "people_affected": {
+          "default": 0,
+          "minimum": 0,
+          "title": "People Affected",
+          "type": "integer"
+        },
+        "person_hours_no_power": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Power",
+          "type": "number"
+        },
+        "person_hours_no_water": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Water",
+          "type": "number"
+        }
+      },
+      "title": "Damage",
+      "type": "object"
+    }
+  },
+  "description": "A maximal sequence of causally-plausible events.\n\nBuilt from (a declared dependency edge exists) AND (0 < dt <= W). Nothing\nelse. The miner never reads Event.cause \u2014 that field exists only so Lane F\ncan score how well parentage was recovered, which is the single most\nimportant diagnostic in the project.",
+  "properties": {
+    "chain_id": {
+      "title": "Chain Id",
+      "type": "string"
+    },
+    "damage": {
+      "$ref": "#/$defs/Damage"
+    },
+    "events": {
+      "description": "ordered Event.ids",
+      "items": {
+        "type": "string"
+      },
+      "title": "Events",
+      "type": "array"
+    },
+    "hops": {
+      "minimum": 0,
+      "title": "Hops",
+      "type": "integer"
+    },
+    "layers_crossed": {
+      "minimum": 0,
+      "title": "Layers Crossed",
+      "type": "integer"
+    },
+    "scenario_id": {
+      "title": "Scenario Id",
+      "type": "string"
+    },
+    "span_s": {
+      "minimum": 0.0,
+      "title": "Span S",
+      "type": "number"
+    },
+    "terminated": {
+      "description": "no further propagation within W of the last event",
+      "title": "Terminated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "chain_id",
+    "scenario_id",
+    "events",
+    "hops",
+    "layers_crossed",
+    "span_s",
+    "terminated",
+    "damage"
+  ],
+  "title": "Chain",
+  "type": "object"
+}

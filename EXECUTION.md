@@ -92,7 +92,7 @@ firebreak/
 │   ├── kernel/                   alpha/beta estimation, counting + MLE
 │   └── criticality/              live branching ratio, susceptibility state
 ├── decision/          OWNER: C   action space, counterfactual rollout, deadline solver
-├── platform/          OWNER: D   FastAPI, WebSocket, persistence, CI, deploy
+├── service/          OWNER: D   FastAPI, WebSocket, persistence, CI, deploy
 ├── console/           OWNER: E   MapLibre + deck.gl city view, timeline, demo keys
 ├── eval/              OWNER: F   seven arms, metrics, results.md. NEVER hand-edited.
 │   └── baselines/                I³ adapter, centrality, oracle
@@ -103,7 +103,7 @@ firebreak/
 
 **The rule that makes this work: nothing in `decision/` imports anything from `city/`.**
 
-The decision layer consumes a *graph and a kernel*, never a simulator. If an intervention scorer needs to know it is looking at a water pump rather than a node with a dependency profile, the design is wrong and the whole "domain-agnostic engine" claim on slide 8 is a lie. Enforce it with an AST-grep test in `platform/tests/test_invariants.py`, and a second test that catches the loophole: no executable line in `decision/` may name a layer — a string literal comparing against `"water"` passes an import check and still couples the engine.
+The decision layer consumes a *graph and a kernel*, never a simulator. If an intervention scorer needs to know it is looking at a water pump rather than a node with a dependency profile, the design is wrong and the whole "domain-agnostic engine" claim on slide 8 is a lie. Enforce it with an AST-grep test in `service/tests/test_invariants.py`, and a second test that catches the loophole: no executable line in `decision/` may name a layer — a string literal comparing against `"water"` passes an import check and still couples the engine.
 
 This is the same invariant that made PACT's core/rails split defensible. It is worth a test.
 
@@ -154,7 +154,7 @@ Six lanes. Read your own file in `lanes/` after this one.
 | **A — City & Simulator** | | `contracts/`, `city/`, `scenarios/` | everyone | nothing |
 | **B — Inference** | | `inference/` | C, F | A (event stream) |
 | **C — Decision** | | `decision/` | E, F | B (kernel) — but codes against fixture kernel from hour 6 |
-| **D — Platform** | | `platform/` | E | contracts only |
+| **D — Platform** | | `service/` | E | contracts only |
 | **E — Console** | | `console/` | nothing | contracts only — codes against fixture scenarios |
 | **F — Evaluation** | | `eval/` | the pitch | A, B, C |
 

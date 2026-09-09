@@ -1,0 +1,71 @@
+{
+  "description": "One observation on one node at one time.\n\nTwo fields are GROUND TRUTH ONLY and must be stripped by service/redact.py\nbefore any inference or decision code sees them: `cause`, and rows with\n`observed=False`. This is the leakage boundary and it is worth more than any\nmodel in the repo.",
+  "properties": {
+    "anomaly_score": {
+      "description": "output of the commodity per-stream detector. This is deliberately the whole of baseline arm A1. Improving it strengthens our own baseline for no gain \u2014 no lane spends time here.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Anomaly Score",
+      "type": "number"
+    },
+    "cause": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "GROUND TRUTH parent event_id. NEVER visible to inference/ or decision/.",
+      "title": "Cause"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "anomaly",
+        "degraded",
+        "failed",
+        "restored"
+      ],
+      "title": "Kind",
+      "type": "string"
+    },
+    "node_id": {
+      "title": "Node Id",
+      "type": "string"
+    },
+    "observed": {
+      "default": true,
+      "description": "False => ground truth only, invisible to the system",
+      "title": "Observed",
+      "type": "boolean"
+    },
+    "severity": {
+      "description": "layer-normalised",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Severity",
+      "type": "number"
+    },
+    "t": {
+      "description": "seconds since scenario epoch; float, not datetime",
+      "title": "T",
+      "type": "number"
+    }
+  },
+  "required": [
+    "event_id",
+    "node_id",
+    "t",
+    "kind",
+    "severity",
+    "anomaly_score"
+  ],
+  "title": "Event",
+  "type": "object"
+}

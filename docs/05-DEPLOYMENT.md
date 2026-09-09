@@ -41,7 +41,7 @@ DuckDB and Postgres both, deliberately: the analytical store and the operational
 - **Migrations**, versioned, forward-only. Never `CREATE TABLE IF NOT EXISTS`.
 - **Backpressure.** WebSocket frames are queued with a bound; on overflow drop *criticality* frames and never *decision* frames, and increment a visible counter. A console that silently misses a decision is worse than one that stutters.
 - **Health, readiness, graceful shutdown.** The worker finishes its current rollout batch and checkpoints.
-- **Redaction boundary.** `platform/redact.py` strips `Event.cause` and `observed=False` before anything reaches `inference/` or `decision/`. Tested. See contracts §2.
+- **Redaction boundary.** `service/redact.py` strips `Event.cause` and `observed=False` before anything reaches `inference/` or `decision/`. Tested. See contracts §2.
 - **Resource caps.** Rollout batch size and worker memory bounded by config, because 8 GB available and 2,000 rollouts × 2,000 nodes is not free.
 
 ## CI — what it must actually prove

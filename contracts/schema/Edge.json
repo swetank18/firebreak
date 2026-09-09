@@ -1,0 +1,47 @@
+{
+  "description": "flow = conveyance inside a layer. depends_on = src requires dst to function.",
+  "properties": {
+    "attrs": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Attrs",
+      "type": "object"
+    },
+    "dst": {
+      "title": "Dst",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "nominal_delay_s": {
+      "default": 0.0,
+      "description": "ENGINEERING PRIOR ONLY. A cold-start hint for the decision layer. The simulator must never read this to generate delays and the kernel must never recover it \u2014 see risk R1. Learned 1/beta correlating above 0.95 with this field means we fit the config file, not a physical process.",
+      "minimum": 0.0,
+      "title": "Nominal Delay S",
+      "type": "number"
+    },
+    "relation": {
+      "enum": [
+        "flow",
+        "depends_on"
+      ],
+      "title": "Relation",
+      "type": "string"
+    },
+    "src": {
+      "title": "Src",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "src",
+    "dst",
+    "relation"
+  ],
+  "title": "Edge",
+  "type": "object"
+}

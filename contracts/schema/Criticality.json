@@ -1,0 +1,114 @@
+{
+  "$defs": {
+    "Damage": {
+      "description": "Never collapse to rupees.\n\nA synthetic money figure is the fastest way to lose a judge who works in\ninfrastructure. Report the vector; derive one scalar for ranking from\nversioned weights that appear on a slide.",
+      "properties": {
+        "hospital_critical_hours": {
+          "default": 0.0,
+          "description": "facility-hours where a health node lost power OR water",
+          "minimum": 0.0,
+          "title": "Hospital Critical Hours",
+          "type": "number"
+        },
+        "people_affected": {
+          "default": 0,
+          "minimum": 0,
+          "title": "People Affected",
+          "type": "integer"
+        },
+        "person_hours_no_power": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Power",
+          "type": "number"
+        },
+        "person_hours_no_water": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Person Hours No Water",
+          "type": "number"
+        }
+      },
+      "title": "Damage",
+      "type": "object"
+    }
+  },
+  "description": "Why one alarm matters and an identical-scoring one does not.",
+  "properties": {
+    "DANGER_THRESHOLD": {
+      "default": 1.0,
+      "title": "Danger Threshold",
+      "type": "number"
+    },
+    "branching_ratio": {
+      "description": "n_i = sum_j alpha_ij * s_j(t). THE HEADLINE NUMBER. Above 1.0 the cascade grows; below it dies. This is the whole answer to 'distinguish normal abnormality from dangerous abnormality'.",
+      "minimum": 0.0,
+      "title": "Branching Ratio",
+      "type": "number"
+    },
+    "ci_high": {
+      "title": "Ci High",
+      "type": "number"
+    },
+    "ci_low": {
+      "description": "bootstrap CI on branching_ratio",
+      "title": "Ci Low",
+      "type": "number"
+    },
+    "expected_damage": {
+      "$ref": "#/$defs/Damage"
+    },
+    "expected_reach": {
+      "description": "E[nodes failed]",
+      "minimum": 0.0,
+      "title": "Expected Reach",
+      "type": "number"
+    },
+    "n_rollouts": {
+      "minimum": 0,
+      "title": "N Rollouts",
+      "type": "integer"
+    },
+    "node_id": {
+      "title": "Node Id",
+      "type": "string"
+    },
+    "p_cascade": {
+      "description": "P(chain from here reaches CATASTROPHE_HOPS)",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "P Cascade",
+      "type": "number"
+    },
+    "t": {
+      "title": "T",
+      "type": "number"
+    },
+    "time_to_critical_s": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "None if it never goes critical within the horizon",
+      "title": "Time To Critical S"
+    }
+  },
+  "required": [
+    "node_id",
+    "t",
+    "branching_ratio",
+    "p_cascade",
+    "expected_reach",
+    "expected_damage",
+    "ci_low",
+    "ci_high",
+    "n_rollouts"
+  ],
+  "title": "Criticality",
+  "type": "object"
+}

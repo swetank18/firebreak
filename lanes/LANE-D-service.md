@@ -1,6 +1,6 @@
 # LANE D — Platform: API, streaming, persistence, CI, deploy
 
-**You own:** `platform/`, `scripts/`, `.github/`, `Dockerfile`, `docker-compose.yml`, `deploy/`
+**You own:** `service/`, `scripts/`, `.github/`, `Dockerfile`, `docker-compose.yml`, `deploy/`
 **You do not write:** `city/`, `inference/`, `decision/`, `console/`, `eval/`
 **You are not blocked by anyone after hour 6.** Contracts are enough.
 
@@ -18,7 +18,7 @@ Python 3.12.3, Node v20.20.2, git, 16 cores, 14 GB RAM, **9.2 GB disk**.
 |---|---|---|
 | 6–8 | `scripts/gen_contracts.sh`, pydantic + TS generated from JSON Schema, drift check | **Every lane typechecks** |
 | 8–12 | FastAPI skeleton, all `/v1` routes returning fixtures | Lane E is unblocked forever |
-| 12–16 | `platform/redact.py` + the leakage boundary test | Inference is safe to wire |
+| 12–16 | `service/redact.py` + the leakage boundary test | Inference is safe to wire |
 | 16–20 | WebSocket stream, bounded queue, backpressure, `seq` | Console can replay live |
 | 20–24 | Postgres + migrations, DuckDB store, correlation IDs | State survives restart |
 | 24–30 | Worker pool, bounded memory, checkpointing | 4,200-run job is safe to launch |
@@ -28,7 +28,7 @@ Python 3.12.3, Node v20.20.2, git, 16 cores, 14 GB RAM, **9.2 GB disk**.
 
 ## The redaction boundary — your most important 40 lines
 
-`platform/redact.py` strips `Event.cause` and every `observed=False` row before anything reaches `inference/` or `decision/`.
+`service/redact.py` strips `Event.cause` and every `observed=False` row before anything reaches `inference/` or `decision/`.
 
 Test it two ways: a runtime test that a redacted Event has no `cause`, and an **AST grep** asserting the string `cause` does not appear in any executable line under `inference/` or `decision/`. The runtime test catches accidents; the AST test catches someone at hour 30 adding a "just for debugging" access that never gets removed.
 
@@ -36,7 +36,7 @@ This boundary is worth more than any model in the repo. Everything Lane F report
 
 ## The invariant tests
 
-Also yours, in `platform/tests/test_invariants.py`:
+Also yours, in `service/tests/test_invariants.py`:
 
 1. `decision/` imports nothing from `city/`
 2. No executable line in `decision/` contains a layer name (`"power"`, `"water"`, `"transport"`, `"telecom"`, `"health"`) — the string-literal loophole

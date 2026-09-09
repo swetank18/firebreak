@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "Edge": {
+      "description": "flow = conveyance inside a layer. depends_on = src requires dst to function.",
+      "properties": {
+        "attrs": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Attrs",
+          "type": "object"
+        },
+        "dst": {
+          "title": "Dst",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "nominal_delay_s": {
+          "default": 0.0,
+          "description": "ENGINEERING PRIOR ONLY. A cold-start hint for the decision layer. The simulator must never read this to generate delays and the kernel must never recover it \u2014 see risk R1. Learned 1/beta correlating above 0.95 with this field means we fit the config file, not a physical process.",
+          "minimum": 0.0,
+          "title": "Nominal Delay S",
+          "type": "number"
+        },
+        "relation": {
+          "enum": [
+            "flow",
+            "depends_on"
+          ],
+          "title": "Relation",
+          "type": "string"
+        },
+        "src": {
+          "title": "Src",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "src",
+        "dst",
+        "relation"
+      ],
+      "title": "Edge",
+      "type": "object"
+    },
+    "Node": {
+      "description": "One asset. Belongs to exactly one layer.",
+      "properties": {
+        "attrs": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "description": "layer-specific; never read from decision/",
+          "title": "Attrs",
+          "type": "object"
+        },
+        "buffer_s": {
+          "default": 0.0,
+          "description": "how long this node survives after its dependencies fail \u2014 generator fuel, tank drawdown, battery. Buffers are why lead time exists; without them every dependency propagates instantly and the project has no reason to exist.",
+          "minimum": 0.0,
+          "title": "Buffer S",
+          "type": "number"
+        },
+        "capacity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "layer-native units; None for pure topology nodes",
+          "title": "Capacity"
+        },
+        "criticality_weight": {
+          "default": 1.0,
+          "description": "hospitals and water treatment sit above 1.0",
+          "minimum": 0.0,
+          "title": "Criticality Weight",
+          "type": "number"
+        },
+        "id": {
+          "description": "'power.ss_042' \u2014 the layer prefix is mandatory",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "description": "substation | pump | road_segment | tower | hospital | ...",
+          "title": "Kind",
+          "type": "string"
+        },
+        "lat": {
+          "title": "Lat",
+          "type": "number"
+        },
+        "layer": {
+          "enum": [
+            "power",
+            "water",
+            "transport",
+            "telecom",
+            "health"
+          ],
+          "title": "Layer",
+          "type": "string"
+        },
+        "lon": {
+          "title": "Lon",
+          "type": "number"
+        },
+        "population_served": {
+          "default": 0,
+          "description": "0 if it serves no one directly; drives the damage function",
+          "minimum": 0,
+          "title": "Population Served",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "layer",
+        "kind",
+        "lat",
+        "lon"
+      ],
+      "title": "Node",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "built_at": {
+      "format": "date-time",
+      "title": "Built At",
+      "type": "string"
+    },
+    "city_id": {
+      "title": "City Id",
+      "type": "string"
+    },
+    "edges": {
+      "items": {
+        "$ref": "#/$defs/Edge"
+      },
+      "title": "Edges",
+      "type": "array"
+    },
+    "nodes": {
+      "items": {
+        "$ref": "#/$defs/Node"
+      },
+      "title": "Nodes",
+      "type": "array"
+    },
+    "source_hash": {
+      "description": "hash of topology inputs; a change means a new city_id",
+      "title": "Source Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "city_id",
+    "built_at",
+    "source_hash",
+    "nodes",
+    "edges"
+  ],
+  "title": "CityGraph",
+  "type": "object"
+}

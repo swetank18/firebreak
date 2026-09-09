@@ -1,0 +1,85 @@
+{
+  "description": "One asset. Belongs to exactly one layer.",
+  "properties": {
+    "attrs": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "description": "layer-specific; never read from decision/",
+      "title": "Attrs",
+      "type": "object"
+    },
+    "buffer_s": {
+      "default": 0.0,
+      "description": "how long this node survives after its dependencies fail \u2014 generator fuel, tank drawdown, battery. Buffers are why lead time exists; without them every dependency propagates instantly and the project has no reason to exist.",
+      "minimum": 0.0,
+      "title": "Buffer S",
+      "type": "number"
+    },
+    "capacity": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "layer-native units; None for pure topology nodes",
+      "title": "Capacity"
+    },
+    "criticality_weight": {
+      "default": 1.0,
+      "description": "hospitals and water treatment sit above 1.0",
+      "minimum": 0.0,
+      "title": "Criticality Weight",
+      "type": "number"
+    },
+    "id": {
+      "description": "'power.ss_042' \u2014 the layer prefix is mandatory",
+      "title": "Id",
+      "type": "string"
+    },
+    "kind": {
+      "description": "substation | pump | road_segment | tower | hospital | ...",
+      "title": "Kind",
+      "type": "string"
+    },
+    "lat": {
+      "title": "Lat",
+      "type": "number"
+    },
+    "layer": {
+      "enum": [
+        "power",
+        "water",
+        "transport",
+        "telecom",
+        "health"
+      ],
+      "title": "Layer",
+      "type": "string"
+    },
+    "lon": {
+      "title": "Lon",
+      "type": "number"
+    },
+    "population_served": {
+      "default": 0,
+      "description": "0 if it serves no one directly; drives the damage function",
+      "minimum": 0,
+      "title": "Population Served",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "id",
+    "layer",
+    "kind",
+    "lat",
+    "lon"
+  ],
+  "title": "Node",
+  "type": "object"
+}

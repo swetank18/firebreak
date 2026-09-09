@@ -1,0 +1,54 @@
+{
+  "properties": {
+    "alpha": {
+      "description": "expected failures at dst per failure at src",
+      "minimum": 0.0,
+      "title": "Alpha",
+      "type": "number"
+    },
+    "beta": {
+      "description": "decay rate; 1/beta is mean propagation delay in seconds",
+      "exclusiveMinimum": 0.0,
+      "title": "Beta",
+      "type": "number"
+    },
+    "ci_high": {
+      "title": "Ci High",
+      "type": "number"
+    },
+    "ci_low": {
+      "description": "bootstrap CI on alpha",
+      "title": "Ci Low",
+      "type": "number"
+    },
+    "edge_id": {
+      "title": "Edge Id",
+      "type": "string"
+    },
+    "estimator": {
+      "enum": [
+        "counting",
+        "mle"
+      ],
+      "title": "Estimator",
+      "type": "string"
+    },
+    "n_obs": {
+      "description": "near-miss chains supporting this estimate",
+      "minimum": 0,
+      "title": "N Obs",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "edge_id",
+    "alpha",
+    "beta",
+    "n_obs",
+    "ci_low",
+    "ci_high",
+    "estimator"
+  ],
+  "title": "EdgeKernel",
+  "type": "object"
+}

@@ -65,7 +65,7 @@ class Event(BaseModel):
     cause: str | None            # ground truth parent event_id. NEVER visible to inference.
 ```
 
-Two fields are ground-truth-only and **must be stripped by the platform before any inference or decision code sees an Event**: `cause`, and `observed=False` rows. Lane D owns `platform/redact.py` and a test that asserts an un-redacted Event cannot reach `inference/` or `decision/`. This is the leakage boundary; it is worth more than any model.
+Two fields are ground-truth-only and **must be stripped by the platform before any inference or decision code sees an Event**: `cause`, and `observed=False` rows. Lane D owns `service/redact.py` and a test that asserts an un-redacted Event cannot reach `inference/` or `decision/`. This is the leakage boundary; it is worth more than any model.
 
 `anomaly_score` is deliberately the whole of arm A1. It comes from a commodity per-stream detector. Making it *good* is not a contribution and no lane should spend time there.
 

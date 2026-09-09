@@ -12,7 +12,7 @@ Read `docs/00-SHARED-CONTRACTS.md` §6.
 
 You consume a graph and a kernel, never a simulator. If a scorer needs to know it is looking at a water pump rather than a node with a dependency profile, the design is wrong and the domain-agnostic claim on slide 8 is a lie.
 
-Two tests in `platform/tests/test_invariants.py` enforce it: an AST grep on imports, and a second that catches the loophole — **no executable line in `decision/` may contain a layer name.** A string literal comparing against `"water"` passes an import check and still couples the engine.
+Two tests in `service/tests/test_invariants.py` enforce it: an AST grep on imports, and a second that catches the loophole — **no executable line in `decision/` may contain a layer name.** A string literal comparing against `"water"` passes an import check and still couples the engine.
 
 This is the same invariant that made PACT's `core`/`rails` split defensible. It is worth the test.
 

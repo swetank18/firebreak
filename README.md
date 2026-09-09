@@ -40,7 +40,7 @@ Six, running in parallel from hour 6 behind a frozen contract.
 | **A** City & Simulator | `city/`, `contracts/`, `scenarios/` | Delays must emerge from physics, not from a constant |
 | **B** Inference | `inference/` | Learned `1/β` must **not** correlate with `nominal_delay_s` |
 | **C** Decision | `decision/` | Imports nothing from `city/` — enforced by AST test |
-| **D** Platform | `platform/`, CI, deploy | The redaction boundary; CI drives the six beats |
+| **D** Platform | `service/`, CI, deploy | The redaction boundary; CI drives the six beats |
 | **E** Console | `console/` | The renderer computes nothing; 2D fallback from day one |
 | **F** Evaluation | `eval/` | Pre-register before results; report H4 even when it loses |
 
