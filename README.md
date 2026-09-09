@@ -79,7 +79,8 @@ Built and measured. Every number below is produced by a script in `eval/` and re
 | Near-miss miner, Hawkes kernel, branching ratio | `inference/`, `eval/recovery.py` |
 | Counterfactual intervention search with deadlines | `decision/`, `eval/arms.py` |
 | Seven-arm ablation, H1–H4, pre-registration diff | `eval/results/results.md`, `eval/results/prereg_diff.md` |
-| The six-beat demo, offline | `www/index.html`, `scripts/export_demo.py` |
+| The write-up, with the evidence tables | `www/index.html` |
+| **The simulation console — the six-beat demo** | **`www/sim/index.html`** |
 | The decision loop, runnable with no server or uplink | `python -m service.decide` |
 
 **Two of four pre-registered predictions went against us and both are reported** — see `eval/results/prereg_diff.md`. So did the power-law realism check, which is kept and reported as failing rather than deleted. What we found by measuring rather than by reading is in `docs/FINDINGS.md`, and what does not work is in `docs/LIMITATIONS.md`, written by us before a judge writes it for us.
@@ -95,13 +96,29 @@ python eval/h2.py               # mined kernel vs declared interdependency matri
 python eval/arms.py             # the seven-arm ablation
 python eval/report.py           # assembles results.md and the pre-registration diff
 python scripts/export_demo.py   # regenerates the demo scenario
-python scripts/build_site.py    # rebuilds www/index.html from the results
+python scripts/build_site.py    # rebuilds both pages from the results
 bash scripts/run_eval.sh        # all of the above, in dependency order
 ```
 
 If this machine has ROS on the Python path, its pytest plugins fail to import
 (`launch_testing` needs `yaml`) and break collection before any of our tests
 run. Nothing here uses them: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest`.
+
+### The demo
+
+`www/sim/index.html` is the console: the city, a clock you can scrub and rewind,
+and three replays of the **same seed** — do nothing, Firebreak's action, and the
+action an experienced operator would reach for. Keys <kbd>1</kbd>–<kbd>6</kbd>
+drive the six beats, space plays, arrows step an hour. It is a static file: no
+server, no network, no model call. In the intervention runs the map rings every
+asset that is down in the do-nothing run and still standing here, so the
+counterfactual is drawn rather than only counted.
+
+**Beat 5 has to fail.** Hardening the most critical assets, at the same budget,
+does not stop the cascade. `scripts/export_demo.py` refuses to write the file if
+that ever stops being true, and CI asserts it.
+
+### The decision loop
 
 The decision path runs on its own, with no server and no network — which is the
 whole of the edge-deployability claim, so it is a command rather than a slide:
