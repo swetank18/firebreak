@@ -1,0 +1,8 @@
+{
+  "isolate":     {"cost": 1.0, "lead_time_s": 300,   "note": "sectionalising is routine"},
+  "harden":      {"cost": 3.0, "lead_time_s": 3600,  "note": "sandbagging, temporary pumps"},
+  "reroute":     {"cost": 2.0, "lead_time_s": 1800,  "note": "only where redundancy exists"},
+  "preposition": {"cost": 2.0, "lead_time_s": 7200,  "note": "fuel, crew, mobile generator. THE DEMO ACTION."},
+  "shed":        {"cost": 4.0, "lead_time_s": 60,    "note": "controlled partial failure; standard practice"},
+  "_note": "Abstract units, not procurement reality. Ratios are defensible; absolutes are not. Stated in LIMITATIONS.md."
+}

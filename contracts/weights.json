@@ -1,0 +1,6 @@
+{
+  "person_hours_no_power": 1.0,
+  "person_hours_no_water": 1.5,
+  "hospital_critical_hours": 200.0,
+  "_note": "Versioned deliberately. These weights appear on a slide. A judge may disagree with them; they may not discover we hid them. hospital_critical_hours dominates because a facility-hour without power or water is a different kind of event from a household-hour."
+}
