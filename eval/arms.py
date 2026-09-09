@@ -62,7 +62,10 @@ def _one(args) -> dict:
     t_dec = base.horizon_s * DECIDE_AT_FRAC
 
     pop_of = {n.id: n.population_served for n in g.nodes}
-    first_failed = list(dict.fromkeys(e.node_id for e in base.events if e.kind == "failed"))
+    first_fail_t: dict[str, float] = {}
+    for e in base.events:
+        if e.kind == "failed" and e.node_id not in first_fail_t:
+            first_fail_t[e.node_id] = e.t
 
     obs = ObservableState(g)
     seen = [e for e in sorted(redact(base.events), key=lambda x: x.t) if e.t <= t_dec]
@@ -141,7 +144,13 @@ def _one(args) -> dict:
         for e in base.events:
             if e.cause and e.cause in by:
                 blame[by[e.cause].node_id] = blame.get(by[e.cause].node_id, 0) + 1
-        fs = set(first_failed)
+        # ONLY ASSETS THAT ARE STILL SAVABLE. Protection lands at t_dec and
+        # cannot resurrect anything already down, so an asset that failed before
+        # then is a no-op that costs the oracle a pool slot. Including them makes
+        # the ceiling read LOWER than it truly is, which flatters every arm
+        # measured against it — the direction of error to be least comfortable
+        # with, since the oracle exists to be unflattering.
+        fs = {n for n, t in first_fail_t.items() if t > t_dec}
         top = lambda d, k: [n for n, _ in sorted(  # noqa: E731
             ((n, v) for n, v in d.items() if n in fs), key=lambda kv: -kv[1])[:k]]
         pool = list(dict.fromkeys(
