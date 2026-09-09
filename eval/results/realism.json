@@ -1,19 +1,19 @@
 {
   "n_scenarios": 1000,
-  "n_cascades": 150472,
-  "alpha": 3.088,
-  "x_min": 44.0,
-  "ks": 0.0887,
-  "ks_critical_95": 0.0106,
-  "n_tail": 16431,
-  "max_size": 460,
+  "n_cascades": 47720,
+  "alpha": 1.9,
+  "x_min": 13.0,
+  "ks": 0.1301,
+  "ks_critical_95": 0.0136,
+  "n_tail": 9964,
+  "max_size": 339,
   "median": 1.0,
-  "frac_mid_5_30": 0.1755,
+  "frac_mid_5_30": 0.1649,
   "powerlaw_test_REPORTED_NOT_GATING": {
-    "alpha_in_range": false,
+    "alpha_in_range": true,
     "ks_not_rejected": false,
-    "lr_vs_exponential": -12873.0,
-    "lr_p": 0.0,
+    "lr_vs_exponential": -2734.9,
+    "lr_p": 3.8744655240419732e-205,
     "powerlaw_favoured": false,
     "note": "Exponential is favoured. Reported, not hidden. See docs/FINDINGS.md."
   },
@@ -22,10 +22,58 @@
     "tail_heavy": true,
     "not_all_tiny": true,
     "not_collapse": true,
-    "not_bimodal": true
+    "not_bimodal": true,
+    "outcome_contingent": true
   },
-  "span": 460.0,
-  "tail_sd": 16.2,
-  "frac_size_1": 0.512,
+  "scenario_contingency": [
+    {
+      "hazard": "monsoon_flood",
+      "median_pop_affected": 0.742,
+      "p10": 0.151,
+      "p90": 0.879,
+      "median_assets_down": 0.404,
+      "not_saturated": true,
+      "outcome_varies": true
+    },
+    {
+      "hazard": "heatwave",
+      "median_pop_affected": 0.201,
+      "p10": 0.075,
+      "p90": 0.835,
+      "median_assets_down": 0.318,
+      "not_saturated": true,
+      "outcome_varies": true
+    },
+    {
+      "hazard": "equipment_age",
+      "median_pop_affected": 0.021,
+      "p10": 0.007,
+      "p90": 0.082,
+      "median_assets_down": 0.169,
+      "not_saturated": true,
+      "outcome_varies": true
+    },
+    {
+      "hazard": "cyber",
+      "median_pop_affected": 0.389,
+      "p10": 0.325,
+      "p90": 0.47,
+      "median_assets_down": 0.383,
+      "not_saturated": true,
+      "outcome_varies": true
+    },
+    {
+      "hazard": "none",
+      "median_pop_affected": 0.001,
+      "p10": 0.0,
+      "p90": 0.008,
+      "median_assets_down": 0.002,
+      "not_saturated": true,
+      "outcome_varies": true
+    }
+  ],
+  "span": 339.0,
+  "tail_sd": 12.2,
+  "frac_size_1": 0.538,
   "PASSED": true
 }

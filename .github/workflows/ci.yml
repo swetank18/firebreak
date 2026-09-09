@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # The invariants first: they are cheap and they are the claims that would
+      # be embarrassing to break silently.
+      - name: Invariants
+        run: pytest service/tests/test_invariants.py service/tests/test_no_stdlib_shadowing.py -q
+
+      - name: Contracts and unit tests
+        run: pytest service/tests -q --ignore=service/tests/test_demo_beats.py
+
+      # Drives the six demo beats and asserts what each one is MEANT TO PROVE.
+      # Beat 5 has to fail to prevent the cascade or the contrast it exists to
+      # draw is not there. See docs/04-DEMO-RUNBOOK.md.
+      - name: The six demo beats
+        run: pytest service/tests/test_demo_beats.py -q
+
+      - name: Site builds from generated numbers only
+        run: |
+          python scripts/build_site.py
+          git diff --exit-code --stat -- www/ || {
+            echo "::error::www/index.html is stale — rebuild it with scripts/build_site.py and commit"
+            exit 1
+          }
+
+      - name: Disk budget
+        run: bash scripts/disk_check.sh
+
+  gate:
+    # The day-1 realism gate. Slower, so it does not block every push, but it
+    # runs on main: no result in this repo means anything if the simulator stops
+    # behaving like infrastructure.
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Realism gate
+        run: python -c "import sys; from eval.realism import main; sys.exit(main(n_per_hazard=40))"

@@ -71,4 +71,28 @@ Beat 5 must fail. CI asserts that it does.
 
 ## Status
 
-Planning complete. No code yet. Open decisions in `EXECUTION.md` §12 — submission deadline, team size, and whether the Chennai topology is a real OSM extract or geo-anchored synthetic.
+Built and measured. Every number below is produced by a script in `eval/` and regenerated on demand; none is typed by hand.
+
+| | Where |
+|---|---|
+| Five-layer Chennai twin, cascade engine, realism gate | `city/`, `eval/realism.py` |
+| Near-miss miner, Hawkes kernel, branching ratio | `inference/`, `eval/recovery.py` |
+| Counterfactual intervention search with deadlines | `decision/`, `eval/arms.py` |
+| Seven-arm ablation, H1–H4, pre-registration diff | `eval/results/results.md`, `eval/results/prereg_diff.md` |
+| The six-beat demo, offline | `www/index.html`, `scripts/export_demo.py` |
+
+**Two of four pre-registered predictions went against us and both are reported** — see `eval/results/prereg_diff.md`. So did the power-law realism check, which is kept and reported as failing rather than deleted. What we found by measuring rather than by reading is in `docs/FINDINGS.md`, and what does not work is in `docs/LIMITATIONS.md`, written by us before a judge writes it for us.
+
+### Running it
+
+```bash
+pip install -r requirements.txt
+pytest                          # invariants, contracts, and the six demo beats
+python eval/realism.py          # the day-1 gate; nothing downstream means anything without it
+python eval/h1.py               # which alarm becomes a catastrophe
+python eval/h2.py               # mined kernel vs declared interdependency matrix
+python eval/arms.py             # the seven-arm ablation
+python eval/report.py           # assembles results.md and the pre-registration diff
+python scripts/export_demo.py   # regenerates the demo scenario
+python scripts/build_site.py    # rebuilds www/index.html from the results
+```

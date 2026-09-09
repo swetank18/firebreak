@@ -35,10 +35,13 @@ def run(
     arm: str = "A0",
     horizon_s: float = HORIZON_S,
     tick_s: float = TICK_S,
+    protected: dict[str, float] | None = None,
+    protect_at_s: float = 0.0,
 ) -> Scenario:
     n_ticks = int(horizon_s / tick_s)
     field = hz.build(hazard_name, g, n_ticks, seed)
-    engine = CascadeEngine(g, field, seed=seed, tick_s=tick_s)
+    engine = CascadeEngine(g, field, seed=seed, tick_s=tick_s,
+                           protected=protected, protect_at_s=protect_at_s)
     events = engine.run(horizon_s)
 
     return Scenario(

@@ -1,0 +1,63 @@
+{
+  "n_scenarios": 36,
+  "budget": 5,
+  "protect": 0.9,
+  "kernel_edges": 2057,
+  "arms": [
+    {
+      "arm": "A0",
+      "mechanism": "do nothing",
+      "damage": 26939249.2,
+      "prevented": 0.0,
+      "prevented_pct": 0.0,
+      "hosp_hours_saved": 0.0,
+      "oracle_captured_pct": 0.0
+    },
+    {
+      "arm": "A1",
+      "mechanism": "rank by anomaly score",
+      "damage": 26938651.5,
+      "prevented": 597.7,
+      "prevented_pct": 0.0,
+      "hosp_hours_saved": 0.11,
+      "oracle_captured_pct": 0.0
+    },
+    {
+      "arm": "A2",
+      "mechanism": "+ static betweenness",
+      "damage": 25614258.5,
+      "prevented": 1324990.7,
+      "prevented_pct": 4.92,
+      "hosp_hours_saved": 4.0,
+      "oracle_captured_pct": 0.0
+    },
+    {
+      "arm": "A3",
+      "mechanism": "+ branching ratio",
+      "damage": 26926760.4,
+      "prevented": 12488.7,
+      "prevented_pct": 0.05,
+      "hosp_hours_saved": 0.22,
+      "oracle_captured_pct": 13.0
+    },
+    {
+      "arm": "A4",
+      "mechanism": "+ counterfactual search",
+      "damage": 26936887.0,
+      "prevented": 2362.1,
+      "prevented_pct": 0.01,
+      "hosp_hours_saved": 0.33,
+      "oracle_captured_pct": 0.0
+    },
+    {
+      "arm": "A6",
+      "mechanism": "oracle (perfect foresight)",
+      "damage": 26937461.4,
+      "prevented": 1787.8,
+      "prevented_pct": 0.01,
+      "hosp_hours_saved": 0.22,
+      "oracle_captured_pct": 100.0
+    }
+  ],
+  "A5_note": "I3 (Tsinghua, arXiv 2503.02890) not reproduced \u2014 published numbers only. Stated rather than dropped."
+}

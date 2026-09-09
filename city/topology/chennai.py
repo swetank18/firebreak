@@ -55,8 +55,11 @@ def build(seed: int = 7) -> CityGraph:
     edges: list[Edge] = []
 
     def add(id, layer, kind, lat, lon, *, cap=None, pop=0, w=1.0, buf=0.0):
+        # The city declares its own protected class; the decision layer reads the
+        # flag and never the layer name. See docs/DECISIONS.md.
         nodes.append(Node(id=id, layer=layer, kind=kind, lat=lat, lon=lon, capacity=cap,
-                          population_served=pop, criticality_weight=w, buffer_s=buf))
+                          population_served=pop, criticality_weight=w, buffer_s=buf,
+                          protected_class=(layer == "health")))
 
     def link(src, dst, rel, delay=0.0):
         edges.append(Edge(id=f"{src}->{dst}", src=src, dst=dst, relation=rel,

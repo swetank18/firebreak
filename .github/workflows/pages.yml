@@ -3,7 +3,7 @@ name: Deploy site
 on:
   push:
     branches: [main]
-    paths: ['site/**', 'scripts/pitch_template.html', 'scripts/build_site.py', '.github/workflows/pages.yml']
+    paths: ['www/**', 'scripts/pitch_template.html', 'scripts/build_site.py', '.github/workflows/pages.yml']
   workflow_dispatch:
 
 permissions:
@@ -26,6 +26,6 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: www
       - id: deploy
         uses: actions/deploy-pages@v4

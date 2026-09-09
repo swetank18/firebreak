@@ -13,7 +13,131 @@ from datetime import datetime, timezone
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TPL = ROOT / "scripts" / "pitch_template.html"
 DATA = ROOT / "console" / "data" / "demo.json"
-OUT = ROOT / "site" / "index.html"
+RESULTS = ROOT / "eval" / "results"
+OUT = ROOT / "www" / "index.html"
+
+
+def _res(name: str) -> dict:
+    f = RESULTS / f"{name}.json"
+    if not f.exists():
+        raise SystemExit(f"missing {f}. Run the eval scripts before building the site — "
+                         "no number on this page is allowed to be typed by hand.")
+    return json.loads(f.read_text())
+
+
+def _tag(kind: str, text: str) -> str:
+    return f'<span class="tag {kind}">{text}</span>'
+
+
+def _evidence_rows() -> str:
+    """Every row here is read out of eval/results/*.json. None is typed.
+
+    The page says "numbers regenerate from eval/, none typed by hand". It used
+    to say that above a table of hand-typed constants, which had already gone
+    stale against the results in the repo.
+    """
+    r, h, rec = _res("realism"), _res("h1"), _res("recovery")
+    pl = r["powerlaw_test_REPORTED_NOT_GATING"]
+    rows = [
+        ("Realism gate — cascade sizes",
+         f"span {r['span']:,.0f}\u00d7 \u00b7 tail {r['tail_sd']:.1f}\u03c3",
+         ("pass", "Pass") if r["gate_checks"]["tail_heavy"] else ("fail", "Failed"),
+         "Behaves like infrastructure"),
+        ("Scenario contingency — is the outcome in play?",
+         "all 5 hazards", ("pass", "Pass") if r["gate_checks"]["outcome_contingent"]
+         else ("fail", "Failed"), "An intervention can still move it"),
+        ("Power-law tail (we expected one)",
+         f"LR {pl['lr_vs_exponential']:,.0f} \u00b7 p\u2248{pl['lr_p']:.0e}",
+         ("pass", "Confirmed") if pl["powerlaw_favoured"] else ("fail", "Failed"),
+         "Exponential wins. Subcritical."),
+        ("Chain recovery — the thesis check",
+         f"P {rec['precision']:.3f} \u00b7 R {rec['recall']:.3f}",
+         ("pass", "Pass") if rec["f1"] > 0.7 else ("fail", "Failed"),
+         "Near-misses <em>are</em> recoverable"),
+        ("H1 — anomaly score is at chance",
+         f"AUC {h['auc_anomaly_score']:.3f}",
+         ("pass", "Confirmed") if 0.45 <= h["auc_anomaly_score"] <= 0.60 else ("fail", "Missed"),
+         "As pre-registered"),
+        ("H1 — ours \u2265 0.80",
+         f"AUC {h['auc_branching_ratio']:.3f}",
+         ("pass", "Pass") if h["auc_branching_ratio"] >= 0.80 else ("fail", "Short"),
+         "Our target was optimistic"),
+        ("Health-impact label",
+         f"{h['label2_health_impact']['auc_anomaly_score']:.3f} \u2192 "
+         f"{h['label2_health_impact']['auc_branching_ratio']:.3f}",
+         ("part", f"+{h['label2_health_impact']['delta']:.3f}"),
+         "The operational question"),
+    ]
+    return "\n".join(
+        f"      <tr><td>{a}</td><td class=\"n\">{b}</td>"
+        f"<td>{_tag(c[0], c[1])}</td><td>{d}</td></tr>"
+        for a, b, c, d in rows)
+
+
+def _auc_bars() -> str:
+    h = _res("h1")
+    bars = [("Anomaly score", "(what everyone builds)", h["auc_anomaly_score"], ""),
+            ("Branching ratio", "(cascade label)", h["auc_branching_ratio"], " ours"),
+            ("Branching ratio", "(health-impact label)",
+             h["label2_health_impact"]["auc_branching_ratio"], " ours")]
+    return "\n".join(
+        f'    <div class="bar"><span>{n} <span style="color:var(--ink-3)">{sub}</span></span>'
+        f'<span class="track"><span class="fill{cls}" style="width:{v*100:.1f}%"></span>'
+        f'<span class="mid"></span></span><span class="val">{v:.3f}</span></div>'
+        for n, sub, v, cls in bars)
+
+
+def _arms() -> tuple[str, str]:
+    a = _res("arms")
+    rows = "\n".join(
+        f"      <tr><td class=\"n\">{t['arm']}</td><td>{t['mechanism']}</td>"
+        f"<td class=\"n\">{t['damage']:,.0f}</td><td class=\"n\">{t['prevented']:,.0f}</td>"
+        f"<td class=\"n\">{t['prevented_pct']:.1f}%</td>"
+        f"<td class=\"n\">{t['oracle_captured_pct']:.0f}%</td></tr>"
+        for t in a["arms"])
+    cap = (f"{a['n_scenarios']} held-out scenarios, budget {a['budget']} interventions. "
+           "Each arm adds exactly one mechanism. Interventions are applied in the engine "
+           "and re-run on the same seed with paired randomness — a true counterfactual, "
+           "not a score under our own rollout model. "
+           "<b>A5 — I\u00b3 (Tsinghua, arXiv 2503.02890) was not reproduced on our hardware; "
+           "published numbers only, stated rather than quietly dropped.</b>")
+    return rows, cap
+
+
+def _demo(d: dict) -> tuple[str, str]:
+    runs, order = d.get("runs", {}), ["do_nothing", "firebreak", "human"]
+    label = {"do_nothing": "Do nothing",
+             "firebreak": "Firebreak\u2019s action",
+             "human": "Harden the hospital (the human instinct)"}
+    colour = {"do_nothing": "var(--alarm)", "firebreak": "var(--safe)",
+              "human": "var(--accent)"}
+    rows = []
+    for k in order:
+        if k not in runs:
+            continue
+        s = runs[k]["summary"]
+        rows.append(
+            f'<tr data-run="{k}"><td class="lab">'
+            f'<span class="dot" style="background:{colour[k]}"></span>{label[k]}</td>'
+            f'<td class="n">{s["assets_failed"]:,}</td>'
+            f'<td class="n">{s["hospitals_hit"]}</td>'
+            f'<td class="n">{s["person_hours"]:,.0f}</td></tr>')
+    iv = d.get("intervention", {})
+    caption = ""
+    if runs and "firebreak" in runs and "human" in runs:
+        fb, hu, dn = (runs["firebreak"]["summary"], runs["human"]["summary"],
+                      runs["do_nothing"]["summary"])
+        mins = int((iv.get("deadline_s") or 0) // 60)
+        caption = (
+            f"Same seed, same randomness, rewound twice. Firebreak\u2019s action "
+            f"({iv.get('kind', 'n/a')} on {len(iv.get('targets', []))} assets, cost "
+            f"{iv.get('cost', 0):.0f} units, deadline {mins} min) leaves "
+            f"{fb['person_hours']:,.0f} person-hours lost against {dn['person_hours']:,.0f} "
+            f"for doing nothing. Hardening the most critical asset instead \u2014 the same "
+            f"budget, and what an experienced operator reaches for \u2014 leaves "
+            f"{hu['person_hours']:,.0f}. <b>Beat 5 is supposed to fail, and CI asserts that "
+            f"it does.</b> The decision took {iv.get('compute_ms', 0):,.0f} ms.")
+    return "\n".join(rows), caption
 
 HEAD = """<!doctype html>
 <html lang="en">
@@ -41,7 +165,24 @@ def main() -> None:
         n["lat"] = round(n["lat"], 4)
         n["lon"] = round(n["lon"], 4)
         n.pop("buf", None)
-    body = TPL.read_text().replace("__DATA__", json.dumps(d, separators=(",", ":")))
+    arms_rows, arms_caption = _arms()
+    demo_rows, demo_caption = _demo(d)
+    body = TPL.read_text()
+    for key, val in (
+        ("__DATA__", json.dumps(d, separators=(",", ":"))),
+        ("__EVIDENCE_ROWS__", _evidence_rows()),
+        ("__AUC_BARS__", _auc_bars()),
+        ("__ARMS_ROWS__", arms_rows),
+        ("__ARMS_CAPTION__", arms_caption),
+        ("__DEMO_ROWS__", demo_rows),
+        ("__DEMO_CAPTION__", demo_caption),
+    ):
+        body = body.replace(key, val)
+    if "__" in body.replace("__DATA__", ""):
+        import re as _re
+        left = set(_re.findall(r"__[A-Z_]+__", body))
+        if left:
+            raise SystemExit(f"unfilled placeholders in the template: {sorted(left)}")
 
     try:
         sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],

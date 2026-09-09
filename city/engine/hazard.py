@@ -14,6 +14,33 @@ import numpy as np
 
 from contracts.city import CityGraph
 
+# Share of the city, by elevation rank, under water at the flood peak.
+FLOOD_PEAK_FRAC = 0.35
+
+# Per-hazard intensity, expressed relative to the monsoon flood.
+#
+# The flood is the one hazard with a real anchor: December 2015, when roughly a
+# third of Chennai was inundated and about 60% of the city lost power. Its
+# intensity is 1.0 by definition and `CascadeEngine.IGNITION_RATE_HZ` is
+# calibrated against it.
+#
+# The other four have NO comparable anchor. They are synthetic, and their
+# intensities are a judgement call calibrated to a stated operational profile
+# rather than to a measured event — see docs/DECISIONS.md and LIMITATIONS.md:
+#   equipment_age  a background maintenance rate: many ignitions city-wide,
+#                  almost all propagating one or two hops and stopping. This is
+#                  the near-miss corpus generator, so it must stay SMALL.
+#   heatwave       sustained power stress, contingent outcome.
+#   cyber          telecom loss, propagating to water through SCADA.
+#   none           base rate only.
+INTENSITY = {
+    "monsoon_flood": 1.0,
+    "heatwave": 0.15,
+    "cyber": 0.25,
+    "equipment_age": 0.06,
+    "none": 0.05,
+}
+
 
 @dataclass
 class HazardField:
@@ -35,7 +62,14 @@ def _rng(seed: int) -> np.random.Generator:
 
 
 def monsoon_flood(g: CityGraph, n_ticks: int, seed: int) -> HazardField:
-    """A flood front crossing the city, low-lying assets worst hit.
+    """An inundation front: the water level rises, peaks, and recedes.
+
+    An asset is stressed only while the water level exceeds its elevation, so
+    the hazard has a genuine FOOTPRINT — assets on high ground are never
+    touched. The previous version gave every asset in the city at least 35% of
+    its exposure for the whole event, which meant a flood behaved like a
+    city-wide degradation and every scenario ended in total collapse. A flood
+    inundates a region. See docs/FINDINGS.md.
 
     Elevation is not in the topology, so latitude stands in as a proxy and is
     labelled as such in LIMITATIONS.md. Roads and substations are the exposed
@@ -46,20 +80,22 @@ def monsoon_flood(g: CityGraph, n_ticks: int, seed: int) -> HazardField:
     lats = np.array([n.lat for n in g.nodes])
     lo, hi = lats.min(), lats.max()
     peak = int(n_ticks * 0.35)
+    sigma = n_ticks * 0.18
     exposure = {"road_segment": 1.0, "substation": 0.8, "feeder": 0.7,
                 "pumping_station": 0.6, "treatment": 0.5, "tower": 0.4}
+
+    # Fraction of the city (by elevation rank) under water at the peak.
+    # Anchored to December 2015, when roughly a third of Chennai was inundated.
+    peak_level = FLOOD_PEAK_FRAC * rng.uniform(0.85, 1.15)
+    level = peak_level * np.exp(-((np.arange(n_ticks) - peak) ** 2) / (2 * sigma**2))
 
     stress: dict[str, np.ndarray] = {}
     for n in g.nodes:
         e = exposure.get(n.kind, 0.15)
-        # low-lying assets flood earlier and deeper
-        low = 1.0 - ((n.lat - lo) / (hi - lo + 1e-9))
-        arr = np.zeros(n_ticks)
-        for k in range(n_ticks):
-            phase = math.exp(-((k - peak) ** 2) / (2 * (n_ticks * 0.18) ** 2))
-            arr[k] = e * (0.35 + 0.65 * low) * phase
-        arr *= rng.uniform(0.75, 1.25)
-        stress[n.id] = np.clip(arr, 0.0, 1.0)
+        elev = (n.lat - lo) / (hi - lo + 1e-9)          # 0 = lowest ground
+        depth = np.clip(level - elev, 0.0, None)        # zero outside the footprint
+        stress[n.id] = np.clip(e * (depth / max(peak_level, 1e-9)) * rng.uniform(0.75, 1.25),
+                               0.0, 1.0)
     return HazardField("monsoon_flood", stress, n_ticks)
 
 
@@ -117,4 +153,9 @@ HAZARDS = {
 
 
 def build(name: str, g: CityGraph, n_ticks: int, seed: int) -> HazardField:
-    return HAZARDS[name](g, n_ticks, seed)
+    """Build a hazard field and apply its intensity relative to the flood."""
+    f = HAZARDS[name](g, n_ticks, seed)
+    k = INTENSITY.get(name, 1.0)
+    if k != 1.0:
+        f.stress = {nid: arr * k for nid, arr in f.stress.items()}
+    return f

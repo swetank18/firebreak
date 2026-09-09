@@ -38,6 +38,17 @@ class Node(BaseModel):
             "dependency propagates instantly and the project has no reason to exist."
         ),
     )
+    protected_class: bool = Field(
+        default=False,
+        description=(
+            "This asset's outage is counted and reported separately — hospitals here, "
+            "but a city could mark shelters or schools. CONTRACT AMENDMENT 2026-09-09: "
+            "added so the decision layer can weigh a critical facility WITHOUT naming a "
+            "layer. `decision/` may not contain the literal 'health', and a string "
+            "comparison against a layer couples the engine just as an import would. "
+            "See docs/DECISIONS.md."
+        ),
+    )
     attrs: dict[str, float] = Field(default_factory=dict, description="layer-specific; never read from decision/")
 
     @field_validator("id")

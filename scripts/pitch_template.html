@@ -101,8 +101,25 @@ canvas{display:block;width:100%;height:auto}
 .legend{display:flex;gap:18px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--rule);
   font-size:12px;color:var(--ink-2)}
 .legend i{display:inline-block;width:9px;height:9px;margin-right:6px;border-radius:50%;vertical-align:middle}
-.counters{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule)}
-@media(max-width:640px){.counters{grid-template-columns:repeat(2,1fr)}}
+.beats{display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--rule)}
+.beats button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;
+  padding:5px 9px;border:0;border-right:1px solid var(--rule);background:transparent;
+  color:var(--ink-2);cursor:pointer;text-transform:uppercase}
+.beats button:last-child{border-right:0}
+.beats button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+.beats button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.beats b{font-weight:600;margin-right:5px}
+.outcome{border-top:1px solid var(--rule);padding:0}
+.outcome table{margin:0;font-size:13px}
+.outcome th,.outcome td{padding:9px 16px}
+.outcome tr.on td{background:var(--rule-2)}
+.outcome td.lab{font-weight:600}
+.outcome .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+.hint{padding:9px 16px;border-top:1px solid var(--rule);font-size:12px;color:var(--ink-3)}
+.hint kbd{font-family:"IBM Plex Mono",monospace;border:1px solid var(--rule);
+  border-bottom-width:2px;padding:1px 5px;font-size:11px;color:var(--ink-2)}
+.counters{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--rule)}
+@media(max-width:760px){.counters{grid-template-columns:repeat(2,1fr)}}
 .counters div{padding:13px 16px;border-right:1px solid var(--rule-2)}
 .counters div:last-child{border-right:0}
 .counters .k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
@@ -223,7 +240,15 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
 
   <div class="mapwrap">
     <div class="maphead">
-      <span class="t">chennai_v1 · monsoon_flood · seed 90100</span>
+      <span class="t" id="runLabel">chennai_v1 · monsoon_flood</span>
+      <span class="beats" role="group" aria-label="Demo beats">
+        <button data-beat="1" aria-pressed="true"><b>1</b>City</button>
+        <button data-beat="2" aria-pressed="false"><b>2</b>Two alarms</button>
+        <button data-beat="3" aria-pressed="false"><b>3</b>Do nothing</button>
+        <button data-beat="4" aria-pressed="false"><b>4</b>Firebreak</button>
+        <button data-beat="5" aria-pressed="false"><b>5</b>Human instinct</button>
+        <button data-beat="6" aria-pressed="false"><b>6</b>Evidence</button>
+      </span>
       <button class="ctl" id="play">▶ Play</button>
       <button class="ctl ghost" id="reset">Reset</button>
       <span class="clock" id="clock">T+00:00</span>
@@ -233,6 +258,7 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
       <div><div class="k">Assets failed</div><div class="v" id="cFail">0</div></div>
       <div><div class="k">Hospitals hit</div><div class="v" id="cHosp" style="color:var(--alarm)">0</div></div>
       <div><div class="k">People affected</div><div class="v" id="cPeople">0</div></div>
+      <div><div class="k">Person-hours lost</div><div class="v" id="cHours">0</div></div>
       <div><div class="k">Dangerous (n&gt;1)</div><div class="v" id="cDanger" style="color:var(--accent)">0</div></div>
     </div>
     <div class="legend">
@@ -243,10 +269,19 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
       <span><i style="background:var(--health)"></i>Health</span>
       <span style="margin-left:auto;color:var(--alarm)">Ring = failed · Size = branching ratio</span>
     </div>
+    <div class="outcome">
+      <table>
+        <thead><tr><th>At the end of 72 hours</th><th>Assets</th><th>Hospitals</th><th>Person-hours lost</th></tr></thead>
+        <tbody id="outcomeRows">__DEMO_ROWS__</tbody>
+      </table>
+    </div>
+    <div class="hint">Press <kbd>1</kbd>–<kbd>6</kbd> to drive the six beats, <kbd>space</kbd> to play or pause. Nothing is typed and nothing is computed here — every mark and every number is a field in the exported scenario.</div>
   </div>
+
+  <p class="note" style="margin-top:20px">__DEMO_CAPTION__</p>
 </section>
 
-<section>
+<section id="evidence">
   <span class="eyebrow">Evidence</span>
   <h2>What we measured, including what failed</h2>
   <p class="lede">Every number is produced by a script in the repo and regenerated on demand. Two of these went against us, and both are on the slide rather than in a drawer.</p>
@@ -255,42 +290,29 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
   <table>
     <thead><tr><th>Check</th><th>Result</th><th>Verdict</th><th>Reading</th></tr></thead>
     <tbody>
-      <tr><td>Realism gate — cascade sizes</td><td class="n">span 460× · tail 16.2σ</td>
-          <td><span class="tag pass">Pass</span></td><td>Behaves like infrastructure</td></tr>
-      <tr><td>Power-law tail (we expected one)</td><td class="n">LR −12,873 · p≈0</td>
-          <td><span class="tag fail">Failed</span></td><td>Exponential wins. Subcritical.</td></tr>
-      <tr><td>Chain recovery — the thesis check</td><td class="n">P 0.827 · R 0.875</td>
-          <td><span class="tag pass">Pass</span></td><td>Near-misses <em>are</em> recoverable</td></tr>
-      <tr><td>Kernel recovery on synthetic truth</td><td class="n">ρ<sub>s</sub> +0.896 · bias 1.05×</td>
-          <td><span class="tag pass">Pass</span></td><td>The fitter works</td></tr>
-      <tr><td>H1 — anomaly score is at chance</td><td class="n">AUC 0.463</td>
-          <td><span class="tag pass">Confirmed</span></td><td>As pre-registered</td></tr>
-      <tr><td>H1 — ours ≥ 0.80</td><td class="n">AUC 0.621</td>
-          <td><span class="tag fail">Short</span></td><td>Our target was optimistic</td></tr>
-      <tr><td>Health-impact label</td><td class="n">0.479 → 0.708</td>
-          <td><span class="tag part">+0.229</span></td><td>The operational question</td></tr>
+__EVIDENCE_ROWS__
     </tbody>
   </table>
   </div>
 
-  <div class="bars">
-    <div class="bar"><span>Anomaly score <span style="color:var(--ink-3)">(what everyone builds)</span></span>
-      <span class="track"><span class="fill" style="width:46.3%"></span><span class="mid"></span></span>
-      <span class="val">0.463</span></div>
-    <div class="bar"><span>Branching ratio <span style="color:var(--ink-3)">(cascade label)</span></span>
-      <span class="track"><span class="fill ours" style="width:62.1%"></span><span class="mid"></span></span>
-      <span class="val">0.621</span></div>
-    <div class="bar"><span>Branching ratio <span style="color:var(--ink-3)">(health-impact label)</span></span>
-      <span class="track"><span class="fill ours" style="width:70.8%"></span><span class="mid"></span></span>
-      <span class="val">0.708</span></div>
-  </div>
+  <div class="bars">__AUC_BARS__</div>
   <p class="note" style="margin-top:12px">ROC-AUC on held-out scenarios, fresh seeds. The line marks chance (0.500). <b>Anomaly score sits below it</b> — ranking alerts by how loud they are is slightly worse than a coin.</p>
+
+  <h3 style="font-size:15px;margin-top:34px">The seven-arm ablation — one mechanism per arm</h3>
+  <p class="note" style="margin-top:6px">__ARMS_CAPTION__</p>
+  <div class="tblwrap">
+  <table>
+    <thead><tr><th>Arm</th><th>Mechanism</th><th>Damage</th><th>Prevented</th><th>%</th><th>% of oracle</th></tr></thead>
+    <tbody>__ARMS_ROWS__</tbody>
+  </table>
+  </div>
+
 
   <p class="note"><b>Three integration bugs were found by measuring, not by reading.</b> Flow-sibling relations have no edge object, so the estimator and the consumer derived different keys and 80% of the propagation mass silently vanished — H1 read exactly 0.500 with no error raised. <code class="mono">spectral_radius</code> was computing a max row sum and read 10.1 on a system already measured as subcritical. And delays are under-estimated by window truncation, which means <b>intervention deadlines will read optimistic</b> — safe direction, but stated now rather than discovered on stage.</p>
 </section>
 
 <section>
-  <span class="eyebrow">Status at one day of three</span>
+  <span class="eyebrow">Status</span>
   <h2>What stands up, and what does not yet</h2>
   <div class="two">
     <div>
@@ -300,14 +322,15 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
         <li><b>Cascade engine</b> — load redistribution plus buffered dependency drawdown; delay emerges from physics, never from a config constant</li>
         <li><b>Near-miss miner</b> — chains recovered at 0.83 precision without ever seeing ground truth</li>
         <li><b>Hawkes kernel + branching ratio</b> — validated against a known synthetic kernel first</li>
+        <li><b>Counterfactual intervention search</b> — the part no paper does; every action carries a deadline, and the rewind demo runs off it</li>
       </ul>
     </div>
     <div>
       <h3 style="font-size:15px">Not yet</h3>
       <ul class="tick open">
-        <li><b>Counterfactual intervention search</b> — the part no paper does, and the one that makes the rewind demo work</li>
-        <li><b>The seven-arm ablation</b> — including I³ run unmodified as a baseline rather than a strawman</li>
-        <li><b>Live console</b> — this page renders exported data; the operator view is next</li>
+        <li><b>I³ as baseline arm A5</b> — not reproduced on our hardware; published numbers only, stated rather than dropped</li>
+        <li><b>Live console</b> — this page replays exported scenarios; the operator view is next</li>
+        <li><b>Censored-likelihood kernel</b> — the counting estimator under-reads delay, so deadlines read optimistic</li>
         <li><b>Real historian feed</b> — everything above runs on a simulated city</li>
       </ul>
     </div>
@@ -346,8 +369,17 @@ const DATA = __DATA__;
   const cv = document.getElementById('map'), ctx = cv.getContext('2d');
   const css = getComputedStyle(document.documentElement);
   const col = k => css.getPropertyValue('--'+k).trim();
+  const $ = id => document.getElementById(id);
 
-  const nodes = DATA.nodes, tl = DATA.timeline;
+  const nodes = DATA.nodes;
+  // Three precomputed runs of the same seed. The renderer picks one and
+  // replays it; it never simulates anything.
+  const RUNS = DATA.runs || {do_nothing:{timeline:DATA.timeline,summary:{}}};
+  const ORDER = ['do_nothing','firebreak','human'];
+  const LABEL = {do_nothing:'do nothing', firebreak:"Firebreak's action", human:'harden the hospital'};
+  let runKey = 'do_nothing';
+  let tl = RUNS[runKey].timeline;
+
   const lat = nodes.map(n=>n.lat), lon = nodes.map(n=>n.lon);
   const la0=Math.min(...lat), la1=Math.max(...lat), lo0=Math.min(...lon), lo1=Math.max(...lon);
   const pad=26;
@@ -363,36 +395,34 @@ const DATA = __DATA__;
   const X = n => pad + ((n.lon-lo0)/(lo1-lo0))*(W-2*pad);
   const Y = n => 500-pad - ((n.lat-la0)/(la1-la0))*(500-2*pad);
 
-  const byId = {}; nodes.forEach(n=>byId[n.id]=n);
-  const state = {};           // node id -> {t, br, h, pop}
-  const idx = {};             // id -> node
-  nodes.forEach(n=>idx[n.id]=n);
+  const idx = {}; nodes.forEach(n=>idx[n.id]=n);
+  const state = {};
+  const protectedSet = new Set((DATA.intervention&&DATA.intervention.targets)||[]);
+  const humanSet = new Set((DATA.human_action&&DATA.human_action.targets)||[]);
 
   const T_END = DATA.horizon_s;
-  let clock = 0, playing = false, raf = null;
+  const T_DEC = DATA.t_decide_s || 0;
+  let clock = 0, playing = false, raf = null, cursor = 0;
+
+  function marks(){ return runKey==='firebreak' ? protectedSet : runKey==='human' ? humanSet : null; }
 
   function draw(){
     ctx.clearRect(0,0,W,500);
-    // dependency edges, faint
-    ctx.lineWidth = 0.6;
-    ctx.strokeStyle = col('rule');
-    ctx.globalAlpha = 0.5;
+    ctx.lineWidth = 0.6; ctx.strokeStyle = col('rule'); ctx.globalAlpha = 0.5;
     DATA.deps.forEach(e=>{
       const a=idx[e.s], b=idx[e.d]; if(!a||!b) return;
       ctx.beginPath(); ctx.moveTo(X(a),Y(a)); ctx.lineTo(X(b),Y(b)); ctx.stroke();
     });
     ctx.globalAlpha = 1;
-    // nodes
+    const acted = marks(), shown = acted && clock >= T_DEC;
     nodes.forEach(n=>{
       const st = state[n.id];
       const base = n.l==='health' ? 3.0 : n.l==='transport' ? 1.15 : 2.0;
       const x=X(n), y=Y(n);
-      ctx.beginPath();
-      ctx.arc(x,y, base, 0, 6.2832);
+      ctx.beginPath(); ctx.arc(x,y, base, 0, 6.2832);
       ctx.fillStyle = col(n.l);
       ctx.globalAlpha = st ? 1 : (n.l==='transport' ? 0.28 : 0.5);
-      ctx.fill();
-      ctx.globalAlpha = 1;
+      ctx.fill(); ctx.globalAlpha = 1;
       if(st){
         const r = base + 2.2 + Math.min(st.br,5)*1.7;
         ctx.beginPath(); ctx.arc(x,y,r,0,6.2832);
@@ -405,26 +435,38 @@ const DATA = __DATA__;
           ctx.globalAlpha=1;
         }
       }
+      if(shown && acted.has(n.id)){          // where the action was taken
+        ctx.beginPath(); ctx.arc(x,y,base+9,0,6.2832);
+        ctx.strokeStyle=col('safe'); ctx.lineWidth=2; ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x-base-13,y); ctx.lineTo(x-base-9,y);
+        ctx.moveTo(x+base+9,y); ctx.lineTo(x+base+13,y); ctx.stroke();
+      }
     });
   }
 
   function stamp(){
     const h = Math.floor(clock/3600), m = Math.floor((clock%3600)/60);
-    document.getElementById('clock').textContent =
-      'T+'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+    $('clock').textContent = 'T+'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
     let f=0,hosp=0,people=0,dang=0;
-    for(const k in state){ const n=idx[k]; f++;
+    for(const k in state){ const n=idx[k]; if(!n) continue; f++;
       if(n.k==='hospital') hosp++;
       people += n.pop||0;
       if(state[k].br>1) dang++;
     }
-    document.getElementById('cFail').textContent=f.toLocaleString();
-    document.getElementById('cHosp').textContent=hosp;
-    document.getElementById('cPeople').textContent=people.toLocaleString();
-    document.getElementById('cDanger').textContent=dang;
+    $('cFail').textContent=f.toLocaleString();
+    $('cHosp').textContent=hosp;
+    $('cPeople').textContent=people.toLocaleString();
+    $('cDanger').textContent=dang;
+    // person-hours is a run total, not a running sum the renderer could invent
+    const sm = RUNS[runKey].summary||{};
+    const frac = T_END ? Math.min(clock/T_END,1) : 0;
+    $('cHours').textContent = Math.round((sm.person_hours||0)*frac).toLocaleString();
+    document.querySelectorAll('#outcomeRows tr').forEach(tr=>{
+      tr.classList.toggle('on', tr.dataset.run===runKey);
+    });
+    $('runLabel').textContent = 'chennai_v1 · monsoon_flood · seed '+(DATA.seed||'')+' · '+LABEL[runKey];
   }
 
-  let cursor = 0;
   function advance(to){
     while(cursor < tl.length && tl[cursor].t <= to){
       const e = tl[cursor];
@@ -432,39 +474,69 @@ const DATA = __DATA__;
       cursor++;
     }
   }
-  function reset(){
+  function rewind(){
     playing=false; if(raf) cancelAnimationFrame(raf);
-    document.getElementById('play').textContent='▶ Play';
+    $('play').textContent='▶ Play';
     for(const k in state) delete state[k];
-    cursor=0; clock=0; draw(); stamp();
+    cursor=0; clock=0;
+  }
+  function selectRun(key){
+    runKey = RUNS[key] ? key : 'do_nothing';
+    tl = RUNS[runKey].timeline;
+    rewind(); draw(); stamp();
+  }
+  function play(){
+    if(clock>=T_END) { rewind(); }
+    playing = true; $('play').textContent='❚❚ Pause';
+    raf = requestAnimationFrame(tick);
   }
   function tick(){
     if(!playing) return;
     clock += T_END/420;
     if(clock >= T_END){ clock = T_END; advance(clock); draw(); stamp();
-      playing=false; document.getElementById('play').textContent='↻ Replay'; return; }
+      playing=false; $('play').textContent='↻ Replay'; return; }
     advance(clock); draw(); stamp();
     raf = requestAnimationFrame(tick);
   }
-  document.getElementById('play').addEventListener('click',()=>{
-    if(clock>=T_END) reset();
-    playing=!playing;
-    document.getElementById('play').textContent = playing?'❚❚ Pause':'▶ Play';
-    if(playing) raf=requestAnimationFrame(tick);
+
+  // ---- the six beats. Nothing is typed on stage. ----
+  function setBeat(n){
+    document.querySelectorAll('.beats button').forEach(b=>{
+      b.setAttribute('aria-pressed', String(b.dataset.beat===String(n)));
+    });
+    if(n===1){ selectRun('do_nothing'); }
+    else if(n===2){ selectRun('do_nothing'); advance(T_DEC); clock=T_DEC; draw(); stamp();
+      document.querySelector('.alarms').scrollIntoView({behavior:'smooth',block:'center'}); }
+    else if(n===3){ selectRun('do_nothing'); play(); }
+    else if(n===4){ selectRun('firebreak'); play(); }
+    else if(n===5){ selectRun('human'); play(); }
+    else if(n===6){ document.getElementById('evidence').scrollIntoView({behavior:'smooth',block:'start'}); }
+    if(n>=1&&n<=5) cv.scrollIntoView({behavior:'smooth',block:'center'});
+  }
+  document.querySelectorAll('.beats button').forEach(b=>{
+    b.addEventListener('click',()=>setBeat(Number(b.dataset.beat)));
   });
-  document.getElementById('reset').addEventListener('click',reset);
+  document.addEventListener('keydown',ev=>{
+    const t=ev.target;
+    if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
+    if(ev.key>='1'&&ev.key<='6'){ ev.preventDefault(); setBeat(Number(ev.key)); }
+    else if(ev.key===' '){ ev.preventDefault(); playing ? (playing=false,$('play').textContent='▶ Play') : play(); }
+  });
+
+  $('play').addEventListener('click',()=>{
+    if(playing){ playing=false; $('play').textContent='▶ Play'; } else play();
+  });
+  $('reset').addEventListener('click',()=>{ rewind(); draw(); stamp(); });
   window.addEventListener('resize',()=>{ W=resize(); draw(); });
 
-  // fill the alarm pair from real data
   if(DATA.pair){
-    document.getElementById('dangerId').textContent = DATA.pair.danger.id;
-    document.getElementById('dangerScore').textContent = DATA.pair.danger.score.toFixed(3);
-    document.getElementById('dangerBr').textContent = DATA.pair.danger.br.toFixed(2);
-    document.getElementById('decoyId').textContent = DATA.pair.decoy.id;
-    document.getElementById('decoyScore').textContent = DATA.pair.decoy.score.toFixed(3);
-    document.getElementById('decoyBr').textContent = DATA.pair.decoy.br.toFixed(2);
+    $('dangerId').textContent = DATA.pair.danger.id;
+    $('dangerScore').textContent = DATA.pair.danger.score.toFixed(3);
+    $('dangerBr').textContent = DATA.pair.danger.br.toFixed(2);
+    $('decoyId').textContent = DATA.pair.decoy.id;
+    $('decoyScore').textContent = DATA.pair.decoy.score.toFixed(3);
+    $('decoyBr').textContent = DATA.pair.decoy.br.toFixed(2);
   }
-  // show the city at rest, then a short pre-roll so the still frame has content
   draw(); stamp();
   advance(T_END*0.18); clock = T_END*0.18; draw(); stamp();
 })();

@@ -18,6 +18,7 @@ varies with load and hazard. If Lane B ever recovers 1/beta correlating above
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -32,6 +33,17 @@ from contracts.events import Event
 # criticality is where heavy tails live. It is the primary knob for the
 # realism gate — see docs/02-CITY-SPEC.md.
 TOLERANCE = 0.35
+
+# Exogenous ignition intensity: expected ignitions per SECOND per unit
+# (hazard stress x susceptibility). A rate, not a per-tick probability.
+#
+# This was `p = 0.0016 * stress * susceptibility` applied once per tick, which
+# made tick size — a pure discretisation choice — change the modelled physics:
+# the same seed and scenario gave 611 exogenous ignitions at tick_s=60 and 177
+# at tick_s=600. Every scenario also saturated (92% of the city down, seed
+# spread 0.90-0.94), so no intervention could move the outcome and the whole
+# ablation measured nothing. See docs/FINDINGS.md.
+IGNITION_RATE_HZ = 1.0e-5
 
 
 @dataclass
@@ -71,12 +83,29 @@ class Indices:
 
 
 class CascadeEngine:
-    def __init__(self, g: CityGraph, hazard: HazardField, seed: int, tick_s: float = 60.0):
+    def __init__(self, g: CityGraph, hazard: HazardField, seed: int, tick_s: float = 60.0,
+                 protected: dict[str, float] | None = None, protect_at_s: float = 0.0):
+        """`protected` maps node_id -> protection in [0,1], applied at
+        `protect_at_s`. This is how an arm's chosen intervention is tested: the
+        real engine re-runs on the same seed with the protection in place, so
+        the comparison is a true counterfactual rather than a score under our
+        own rollout model — which would flatter arm A4 by construction."""
         self.g = g
         self.ix = Indices.build(g)
         self.hazard = hazard
         self.tick_s = tick_s
         self.rng = np.random.default_rng(seed)
+        self.seed_value = seed
+        self.protected = protected or {}
+        self.protect_at_s = protect_at_s
+        # PAIRED RANDOMNESS. One generator drawn sequentially means protecting
+        # any node shifts every later draw for every other node, so arm-to-arm
+        # differences would be stream drift rather than effect. A precomputed
+        # (tick x node) field indexed by position makes each node's draw
+        # identical across arms. See docs/FINDINGS.md.
+        self._nidx = {n.id: i for i, n in enumerate(g.nodes)}
+        self._field: np.ndarray | None = None
+        self._tick = 0
         self.events: list[Event] = []
         self._eid = 0
         self.world = WorldState(tick_s=tick_s)
@@ -102,7 +131,7 @@ class CascadeEngine:
         s = self.world.nodes[node_id]
         # The commodity detector: loud when a node is stressed, blind to position.
         # Deliberately position-agnostic — that is the whole of baseline arm A1.
-        noise = float(self.rng.normal(0, 0.05))
+        noise = (self._u(node_id, 2) - 0.5) * 0.1
         score = float(np.clip(0.35 * s.susceptibility + 0.30 * severity + noise, 0.0, 1.0))
         self.events.append(
             Event(
@@ -112,7 +141,7 @@ class CascadeEngine:
                 kind=kind,  # type: ignore[arg-type]
                 severity=float(np.clip(severity, 0.0, 1.0)),
                 anomaly_score=score,
-                observed=bool(self.rng.random() < 0.92),
+                    observed=bool(self._u(node_id, 3) < 0.92),
                 cause=cause,
             )
         )
@@ -127,7 +156,7 @@ class CascadeEngine:
         eid = self._emit(node_id, "failed", severity, cause)
         s.cause_event = eid
         # restoration: base repair plus travel over the road network as it is now
-        base = 1800.0 + 5400.0 * self.rng.random()
+        base = 1800.0 + 5400.0 * self._u(node_id, 1)
         s.restore_at = self.world.t + base * self._access_penalty()
         self._shed_load(node_id, eid)
         return eid
@@ -146,16 +175,29 @@ class CascadeEngine:
 
     # ------------------------------------------------------- the five stages
 
+    def _u(self, node_id: str, stream: int = 0) -> float:
+        """Draw for `node_id` at the current tick, stable across arms."""
+        if self._field is None:
+            return float(self.rng.random())
+        i = self._nidx.get(node_id, 0)
+        return float(self._field[self._tick % self._field.shape[0], i, stream])
+
     def _stage_hazard(self, tick: int) -> None:
         for nid, s in self.world.nodes.items():
             s.hazard_stress = self.hazard.at(nid, tick)
+
+    def _prot(self, node_id: str) -> float:
+        if self.world.t < self.protect_at_s:
+            return 0.0
+        return self.protected.get(node_id, 0.0)
 
     def _stage_direct(self) -> None:
         for nid, s in list(self.world.nodes.items()):
             if not s.is_up or s.hazard_stress <= 0:
                 continue
-            p = 0.0016 * s.hazard_stress * s.susceptibility
-            if self.rng.random() < p:
+            lam = IGNITION_RATE_HZ * s.hazard_stress * s.susceptibility * (1.0 - self._prot(nid))
+            p = -math.expm1(-lam * self.tick_s)  # tick-size invariant
+            if self._u(nid, 0) < p:
                 self._fail(nid, s.hazard_stress, cause=None)  # exogenous
 
     def _shed_load(self, failed: str, cause_eid: str) -> None:
@@ -177,7 +219,7 @@ class CascadeEngine:
         for nid, s in list(self.world.nodes.items()):
             if not s.is_up or s.capacity <= 0:
                 continue
-            if s.load > s.capacity:
+            if s.load > s.capacity * (1.0 + 2.0 * self._prot(nid)):
                 parent = next(
                     (p for p in self.ix.siblings(nid) if not self.world.nodes[p].is_up), None
                 )
@@ -207,7 +249,10 @@ class CascadeEngine:
             # Drawdown is NOT a constant. It runs faster under load and hazard,
             # which is what stops the learned kernel recovering a config value.
             rate = 1.0 + 0.8 * s.utilisation + 1.2 * s.hazard_stress + 0.5 * (len(deps_down) - 1)
-            s.buffer_remaining_s -= self.tick_s * rate
+            # prepositioned fuel/crew slows the drawdown; that is the whole
+            # mechanism behind the diesel edge
+            rate *= (1.0 - 0.9 * self._prot(nid))
+            s.buffer_remaining_s -= self.tick_s * max(rate, 0.0)
 
     def _stage_restore(self) -> None:
         for nid, s in self.world.nodes.items():
@@ -226,7 +271,12 @@ class CascadeEngine:
 
     def run(self, horizon_s: float) -> list[Event]:
         n_ticks = int(horizon_s / self.tick_s)
+        # one field for the whole run, from the scenario seed only
+        self._field = np.random.default_rng(self.seed_value).random(
+            (n_ticks, len(self._nidx), 4)
+        )
         for tick in range(n_ticks):
+            self._tick = tick
             self.world.t = tick * self.tick_s
             self._stage_hazard(tick)
             self._stage_direct()

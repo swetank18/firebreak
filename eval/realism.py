@@ -89,11 +89,27 @@ def _powerlaw_vs_exponential(x: np.ndarray, xmin: float = 5.0) -> tuple[float, f
     return R, p
 
 
-def _one(args) -> list[int]:
+def _one(args) -> tuple[list[int], str, float, float]:
+    """Cascade sizes PLUS what fraction of the city this one scenario took down.
+
+    Those are different questions and only the second decides whether an
+    intervention is measurable. The gate used to ask only the first: the size
+    distribution passed while every scenario was ending in 89% of the city
+    down, so no 5-node action could move the outcome and the ablation measured
+    nothing. See docs/FINDINGS.md.
+    """
     hazard, seed = args
     g = chennai.build()
     s = runner.run(g, hazard, seed=seed, tick_s=TICK_S)
-    return cascade_sizes(s.events)
+    pop = {n.id: n.population_served for n in g.nodes}
+    total_pop = max(sum(pop.values()), 1)
+    failed = {e.node_id for e in s.events if e.kind == "failed"}
+    return (
+        cascade_sizes(s.events),
+        hazard,
+        len(failed) / len(g.nodes),
+        sum(pop.get(n, 0) for n in failed) / total_pop,
+    )
 
 
 def main(n_per_hazard: int = 200) -> int:
@@ -102,7 +118,10 @@ def main(n_per_hazard: int = 200) -> int:
     with mp.Pool(processes=min(mp.cpu_count(), 14)) as pool:
         results = pool.map(_one, jobs, chunksize=4)
 
-    sizes = np.array([s for r in results for s in r], dtype=float)
+    sizes = np.array([v for r in results for v in r[0]], dtype=float)
+    sat = {}
+    for _, hazard, frac_nodes, frac_pop in results:
+        sat.setdefault(hazard, []).append((frac_nodes, frac_pop))
     alpha, xmin, ks, n_tail = _fit_powerlaw(sizes)
 
     ks_crit = 1.36 / np.sqrt(max(n_tail, 1))
@@ -128,7 +147,32 @@ def main(n_per_hazard: int = 200) -> int:
     mid = float(np.mean((sizes >= 5) & (sizes < 30)))
     ok_mid = bool(mid > 0.02)
 
-    passed = bool(ok_span and ok_heavy and ok_not_all_tiny and ok_not_collapse and ok_mid)
+    # --- SCENARIO CONTINGENCY: is the outcome still in play? ---
+    # Prediction only matters where the outcome is contingent. A scenario that
+    # ends with the whole city down has nothing left for an intervention to
+    # save, whatever the cascade size distribution looks like.
+    sat_rows = []
+    ok_contingent = True
+    for hazard in HAZARDS:
+        if hazard not in sat:
+            continue
+        pops = np.array([p for _, p in sat[hazard]])
+        med = float(np.median(pops))
+        spread = float(np.percentile(pops, 90) - np.percentile(pops, 10))
+        # `none` is the base-rate hazard and is supposed to do almost nothing.
+        not_saturated = bool(med < 0.85)
+        varies = bool(spread >= 0.02) if hazard != "none" else True
+        ok_contingent = ok_contingent and not_saturated and varies
+        sat_rows.append({
+            "hazard": hazard, "median_pop_affected": round(med, 3),
+            "p10": round(float(np.percentile(pops, 10)), 3),
+            "p90": round(float(np.percentile(pops, 90)), 3),
+            "median_assets_down": round(float(np.median([f for f, _ in sat[hazard]])), 3),
+            "not_saturated": not_saturated, "outcome_varies": varies,
+        })
+
+    passed = bool(ok_span and ok_heavy and ok_not_all_tiny and ok_not_collapse
+                  and ok_mid and ok_contingent)
     ok_alpha = pl_alpha_ok
     ok_ks = pl_ks_ok
     OUT.mkdir(parents=True, exist_ok=True)
@@ -153,7 +197,9 @@ def main(n_per_hazard: int = 200) -> int:
             "size_span_ge_50x": ok_span, "tail_heavy": ok_heavy,
             "not_all_tiny": ok_not_all_tiny, "not_collapse": ok_not_collapse,
             "not_bimodal": ok_mid,
+            "outcome_contingent": ok_contingent,
         },
+        "scenario_contingency": sat_rows,
         "span": round(span, 1), "tail_sd": round(tail_sd, 1),
         "frac_size_1": round(frac_trivial, 4),
         "PASSED": passed,
@@ -174,7 +220,17 @@ def main(n_per_hazard: int = 200) -> int:
         f"| tail heavy | max >= 5 sd above mean, P(>=50) >= 1% | {tail_sd:.1f} sd {'PASS' if ok_heavy else 'FAIL'} |",
         f"| not all tiny | P(size=1) < 90% | {frac_trivial:.1%} {'PASS' if ok_not_all_tiny else 'FAIL'} |",
         f"| not collapse | median small, some trivial | {'PASS' if ok_not_collapse else 'FAIL'} |",
-        f"| not bimodal | mid mass > 2% | {mid:.1%} {'PASS' if ok_mid else 'FAIL'} |", "",
+        f"| not bimodal | mid mass > 2% | {mid:.1%} {'PASS' if ok_mid else 'FAIL'} |",
+        f"| outcome contingent | see below | {'PASS' if ok_contingent else 'FAIL'} |", "",
+        "## Scenario contingency — is the outcome still in play?", "",
+        "The size distribution can pass while every scenario ends in total collapse.",
+        "Those are different questions, and only this one decides whether an",
+        "intervention is measurable. Population affected, per scenario:", "",
+        "| hazard | assets down | pop affected (median) | p10 | p90 | not saturated | varies |",
+        "|---|---|---|---|---|---|---|",
+        *[f"| {r['hazard']} | {r['median_assets_down']:.0%} | {r['median_pop_affected']:.0%} | "
+          f"{r['p10']:.0%} | {r['p90']:.0%} | {'yes' if r['not_saturated'] else '**NO**'} | "
+          f"{'yes' if r['outcome_varies'] else '**NO**'} |" for r in sat_rows], "",
         "## The power-law test — REPORTED, NOT GATING", "",
         "We set out to verify a power law and did not find one. Kept rather than deleted.", "",
         "| check | result |", "|---|---|",

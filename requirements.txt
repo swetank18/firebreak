@@ -1,0 +1,8 @@
+# Runtime + test dependencies. Pinned to the versions the results in
+# eval/results/ were generated with — a results table that cannot be
+# reproduced is not evidence.
+numpy==2.5.3
+scipy==1.18.1
+networkx==3.6.1
+pydantic==2.13.5
+pytest==9.1.1
