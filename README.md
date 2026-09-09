@@ -88,7 +88,7 @@ Built and measured. Every number below is produced by a script in `eval/` and re
 
 ```bash
 pip install -r requirements.txt
-pytest                          # invariants, contracts, and the six demo beats
+pytest                          # invariants, leakage, determinism, and the six demo beats
 python eval/realism.py          # the day-1 gate; nothing downstream means anything without it
 python eval/h1.py               # which alarm becomes a catastrophe
 python eval/h2.py               # mined kernel vs declared interdependency matrix
@@ -98,6 +98,10 @@ python scripts/export_demo.py   # regenerates the demo scenario
 python scripts/build_site.py    # rebuilds www/index.html from the results
 bash scripts/run_eval.sh        # all of the above, in dependency order
 ```
+
+If this machine has ROS on the Python path, its pytest plugins fail to import
+(`launch_testing` needs `yaml`) and break collection before any of our tests
+run. Nothing here uses them: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest`.
 
 The decision path runs on its own, with no server and no network — which is the
 whole of the edge-deployability claim, so it is a command rather than a slide:
