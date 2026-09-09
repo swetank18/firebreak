@@ -56,7 +56,7 @@ Prediction: A1 ≈ 0.5, A3 ≥ 0.80. If A1 lands at 0.7 the claim is softened, h
 
 Temporal split on scenario start time. Train / val / test = 60 / 20 / 20. **Test touched exactly once**, at the end, by one person, recorded in `docs/DECISIONS.md`.
 
-`inference/tests/test_leakage.py` is written **before the first fit** and asserts:
+`service/tests/test_leakage.py` asserts (all tests live under `service/tests/`, which is where `pytest.ini` points; the spec named `inference/tests/`):
 
 1. No chain in the train corpus contains an event with `t` after the val boundary.
 2. No `Event.cause` field is reachable from `inference/` or `decision/` — AST grep, not a runtime check.
@@ -65,6 +65,13 @@ Temporal split on scenario start time. Train / val / test = 60 / 20 / 20. **Test
 5. **Scenario-level, not event-level, splitting** — chains from the same scenario never straddle a boundary. This is the leak that looks like a great result.
 
 Leaks 4 and 5 are the ones that will actually happen. Write them first.
+
+**They were not written first, and 5 happened.** Every kernel was fitted on
+scenarios concatenated into one flat list, which collided event ids across runs
+and let the miner attribute a failure in one scenario to a failure in another —
+2.31x more links than mining each scenario properly. See `docs/FINDINGS.md`.
+The tests exist now, and they run against a corpus dense enough to leak: on the
+35-node fixture city all five pass while proving nothing.
 
 ## Generated, never typed
 

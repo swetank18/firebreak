@@ -20,6 +20,7 @@ forecast; with one it is an instruction.
 
 from __future__ import annotations
 
+import logging
 import time
 import uuid
 
@@ -31,6 +32,8 @@ from contracts.decision import Action, Decision, Intervention
 from contracts.kernel import Kernel
 from decision import actions as A
 from decision.rollout import CascadeRollout
+
+log = logging.getLogger(__name__)
 
 DEADLINE_RETENTION = 0.90
 
@@ -170,8 +173,17 @@ class InterventionSearch:
             iv.deadline_s = self._deadline(iv.action, seeds, s_vec,
                                            iv.damage_prevented_headline, seed)
 
+        decision_id = f"d-{uuid.uuid4().hex[:8]}"
+        log.info("decision.ranked", extra={
+            "decision_id": decision_id, "scenario_id": scenario_id, "t": t,
+            "n_candidates": len(cands), "n_ranked": len(top),
+            "chosen": [iv.action.target for iv in top],
+            "chosen_kinds": [iv.action.kind for iv in top],
+            "deadline_s": [iv.deadline_s for iv in top],
+            "compute_ms": (time.perf_counter() - t0) * 1000.0,
+        })
         return Decision(
-            decision_id=f"d-{uuid.uuid4().hex[:8]}",
+            decision_id=decision_id,
             scenario_id=scenario_id,
             t=t,
             trigger=trigger,

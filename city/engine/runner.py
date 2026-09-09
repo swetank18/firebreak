@@ -6,7 +6,9 @@ Without that, the paired statistics in the ablation are not paired.
 
 from __future__ import annotations
 
+import logging
 import subprocess
+import time
 from datetime import datetime, timezone
 
 from city.engine import hazard as hz
@@ -14,6 +16,8 @@ from city.engine.cascade import CascadeEngine
 from contracts import CONTRACTS_VERSION
 from contracts.city import CityGraph
 from contracts.scenario import Scenario, ScenarioSummary
+
+log = logging.getLogger(__name__)
 
 HORIZON_S = 259_200.0  # 72 hours
 TICK_S = 60.0
@@ -44,7 +48,15 @@ def run(
     engine = CascadeEngine(g, field, seed=seed, tick_s=tick_s,
                            protected=protected, protect_at_s=protect_at_s,
                            event_prefix=f"{scenario_id}/")
+    t0 = time.perf_counter()
     events = engine.run(horizon_s)
+    # The correlation id every downstream record carries. Silent unless an entry
+    # point has called service.obs.configure().
+    log.info("scenario.run", extra={
+        "scenario_id": scenario_id, "city_id": g.city_id, "hazard": hazard_name,
+        "seed": seed, "arm": arm, "n_events": len(events),
+        "n_protected": len(protected or {}), "elapsed_ms": (time.perf_counter() - t0) * 1000.0,
+    })
 
     return Scenario(
         scenario_id=scenario_id,

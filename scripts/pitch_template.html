@@ -284,7 +284,7 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
 <section id="evidence">
   <span class="eyebrow">Evidence</span>
   <h2>What we measured, including what failed</h2>
-  <p class="lede">Every number is produced by a script in the repo and regenerated on demand. Two of these went against us, and both are on the slide rather than in a drawer.</p>
+  <p class="lede">Every number here is read out of <code class="mono">eval/results/*.json</code> when this page is built; the build fails if any of them is missing. The checks that went against us are in the same table as the ones that passed, with the same weight.</p>
 
   <div class="tblwrap">
   <table>
@@ -296,7 +296,7 @@ __EVIDENCE_ROWS__
   </div>
 
   <div class="bars">__AUC_BARS__</div>
-  <p class="note" style="margin-top:12px">ROC-AUC on held-out scenarios, fresh seeds. The line marks chance (0.500). <b>Anomaly score sits below it</b> — ranking alerts by how loud they are is slightly worse than a coin.</p>
+  <p class="note" style="margin-top:12px">ROC-AUC on held-out scenarios, on a seed range never previously scored. The line marks chance (0.500). <b>Anomaly score sits below it</b> — ranking alerts by how loud they are is slightly worse than a coin. We also scored the test set three times while chasing two integration bugs, against a protocol that says touch it once; the reported number was regenerated on fresh seeds and the violation is disclosed rather than dropped.</p>
 
   <h3 style="font-size:15px;margin-top:34px">The seven-arm ablation — one mechanism per arm</h3>
   <p class="note" style="margin-top:6px">__ARMS_CAPTION__</p>
@@ -308,7 +308,7 @@ __EVIDENCE_ROWS__
   </div>
 
 
-  <p class="note"><b>Three integration bugs were found by measuring, not by reading.</b> Flow-sibling relations have no edge object, so the estimator and the consumer derived different keys and 80% of the propagation mass silently vanished — H1 read exactly 0.500 with no error raised. <code class="mono">spectral_radius</code> was computing a max row sum and read 10.1 on a system already measured as subcritical. And delays are under-estimated by window truncation, which means <b>intervention deadlines will read optimistic</b> — safe direction, but stated now rather than discovered on stage.</p>
+  <p class="note"><b>Every serious fault in this project was found by measuring, not by reading.</b> Flow-sibling relations have no edge object, so the estimator and the consumer derived different keys and 80% of the propagation mass silently vanished — H1 read exactly 0.500 with no error raised. Every kernel was then fitted on scenarios concatenated into one list, which collided 8,263 of 12,877 event ids and let the miner attribute a failure in one scenario to a failure in another: 2.3&times; more links than mining each run properly, the surplus entirely phantom. The ablation measured nothing at all until we noticed that 92% of the city was failing in every scenario, leaving no outcome for an intervention to change. And the arm the project is named after came <em>last</em> until we found it was spending four of its five picks isolating assets that had already failed. All four are in <code class="mono">docs/FINDINGS.md</code>, written down before they were fixed.</p>
 </section>
 
 <section>
