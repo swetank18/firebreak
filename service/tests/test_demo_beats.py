@@ -101,7 +101,17 @@ def test_beat6_every_arm_is_reported(demo):
     a = json.loads(ARMS.read_text())
     arms = {t["arm"] for t in a["arms"]}
     assert {"A0", "A1", "A2", "A3", "A4", "A6"} <= arms, f"arms missing: {sorted(arms)}"
-    assert "A5" in a["A5_note"], "A5 must be reported as not-reproduced, not dropped"
+    assert "AR" in arms, (
+        "no chance arm. Protecting five assets at random already prevents damage, so a "
+        "table without that baseline reports noise as an effect."
+    )
+    # A5 is absent from the arms list ON PURPOSE — it was not reproduced — but it
+    # must still be accounted for in words rather than silently dropped.
+    assert "A5" not in arms
+    note = a.get("A5_note", "")
+    assert "not reproduced" in note.lower() and "2503.02890" in note, (
+        f"A5 must be accounted for as not-reproduced, with the paper named. Got: {note!r}"
+    )
 
 
 def test_beat6_the_oracle_is_actually_a_ceiling(demo):

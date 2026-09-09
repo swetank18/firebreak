@@ -162,13 +162,20 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
     h4_as_predicted = bool(h4_delta <= 0.05)
 
     best = max(auc_n, auc_r)
+    # THE PRE-REGISTERED PREDICTOR IS THE BRANCHING RATIO, and the verdict uses
+    # it alone. `best` takes the better of branching ratio and depth-6 reach,
+    # which is choosing a predictor after seeing the results — a smaller version
+    # of the same error as choosing a label after seeing the results, and this
+    # is the file that exists to avoid it. Cascade reach stays in the table as
+    # a secondary predictor, clearly marked as post-hoc.
+    #
     # THE PRE-REGISTERED CRITERION, and nothing else. This used to read
     # `0.40 <= auc_a <= 0.62 and best >= 0.70`, a looser bar invented after the
     # fact, so the report printed "H1 HOLDS" directly above a measured 0.766
     # against a pre-registered 0.80. A verdict scored against a criterion the
     # pre-registration does not contain is not a pre-registered verdict.
     prereg_anomaly_ok = bool(0.45 <= auc_a <= 0.60)
-    prereg_ours_ok = bool(best >= 0.80)
+    prereg_ours_ok = bool(auc_n >= 0.80)
     passed = bool(prereg_anomaly_ok and prereg_ours_ok)
     report = {
         "n_train_scenarios": len(train), "n_test_scenarios": len(test),
@@ -210,8 +217,8 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
         f"- kernel: {len(kernel.edges)} edges, rho = {kernel.spectral_radius:.3f}", "",
         "| predictor | ROC-AUC | 95% CI |", "|---|---|---|",
         f"| anomaly score (**what everyone builds**) | **{auc_a:.3f}** | {ci(ba)} |",
-        f"| branching ratio, one step | {auc_n:.3f} | {ci(bn)} |",
-        f"| cascade reach at depth {CASCADE_HOPS} (**ours**) | **{auc_r:.3f}** | {ci(brr)} |",
+        f"| branching ratio (**ours, pre-registered**) | **{auc_n:.3f}** | {ci(bn)} |",
+        f"| cascade reach at depth {CASCADE_HOPS} (secondary, post-hoc) | {auc_r:.3f} | {ci(brr)} |",
         f"| static betweenness centrality (**arm A2**) | {auc_c:.3f} | |",
         f"| delta, best vs anomaly score | **{best - auc_a:+.3f}** | |", "",
         "## Label 2 — does it reach the health layer?", "",
@@ -226,7 +233,11 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
         "Pre-registered: anomaly AUC in [0.45, 0.60] **and** ours >= 0.80. Both halves,",
         "judged against the pre-registration and not against anything easier.", "",
         f"- anomaly **{auc_a:.3f}** — {'confirmed' if prereg_anomaly_ok else 'OUTSIDE the predicted range'}",
-        f"- ours **{best:.3f}** — {'confirmed' if prereg_ours_ok else 'SHORT of the 0.80 we claimed'}",
+        f"- branching ratio **{auc_n:.3f}** — "
+        f"{'confirmed' if prereg_ours_ok else 'SHORT of the 0.80 we claimed'}",
+        f"- (depth-{CASCADE_HOPS} cascade reach scores {auc_r:.3f}, but it is **not** the "
+        "pre-registered predictor and picking the better of the two after the fact would be "
+        "the same error this file exists to avoid)",
         "", ("Both halves hold." if passed else
              "The half the pitch rests on holds: ranking alerts by how loud they are predicts "
              "catastrophe no better than a coin. Our own target for the other half was "
