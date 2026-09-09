@@ -40,12 +40,14 @@ def run(
 ) -> Scenario:
     n_ticks = int(horizon_s / tick_s)
     field = hz.build(hazard_name, g, n_ticks, seed)
+    scenario_id = f"{g.city_id}-{hazard_name}-{arm}-s{seed}"
     engine = CascadeEngine(g, field, seed=seed, tick_s=tick_s,
-                           protected=protected, protect_at_s=protect_at_s)
+                           protected=protected, protect_at_s=protect_at_s,
+                           event_prefix=f"{scenario_id}/")
     events = engine.run(horizon_s)
 
     return Scenario(
-        scenario_id=f"{g.city_id}-{hazard_name}-{arm}-s{seed}",
+        scenario_id=scenario_id,
         city_id=g.city_id,
         seed=seed,
         hazard=hazard_name,  # type: ignore[arg-type]

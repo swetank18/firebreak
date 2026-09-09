@@ -87,7 +87,7 @@ def main() -> int:
     print("fitting kernel on train scenarios...")
     train = [runner.run(g, h, seed=s, tick_s=TICK)
              for h in ("monsoon_flood", "equipment_age") for s in range(8)]
-    kernel = counting.fit(g, [e for s in train for e in redact(s.events)],
+    kernel = counting.fit(g, [redact(s.events) for s in train],
                           horizon_s=259_200.0 * len(train), corpus_id="demo", seed=0)
     br = BranchingRatio(g, kernel)
     print(f"  {len(kernel.edges)} edges, rho={kernel.spectral_radius:.3f}")

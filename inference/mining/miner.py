@@ -78,6 +78,21 @@ class NearMissMiner:
         out += [(s, "flow_sibling") for s in self.siblings.get(node_id, ())]
         return out
 
+    def links_many(self, corpora: list[list[Event]]) -> list[MinedLink]:
+        """Mine each scenario SEPARATELY and pool the links.
+
+        Every scenario runs over the same 0..horizon clock, so concatenating
+        them interleaves unrelated runs completely in time and the window
+        condition happily attributes a failure in one scenario to a failure in
+        another. Measured: pooling six scenarios produced 36,903 links against
+        16,006 mined properly — 2.3x, and the surplus is entirely phantom.
+        See docs/FINDINGS.md.
+        """
+        out: list[MinedLink] = []
+        for events in corpora:
+            out.extend(self.links(events))
+        return out
+
     def links(self, events: list[Event]) -> list[MinedLink]:
         """Every (parent, child) pair the two conditions admit.
 

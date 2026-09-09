@@ -185,7 +185,7 @@ def main(n_seeds: int = 12) -> int:
     print("fitting kernel on train scenarios...")
     tr = [runner.run(g, h, seed=s, tick_s=TICK)
           for h in ("monsoon_flood", "equipment_age") for s in range(6)]
-    kernel = counting.fit(g, [e for s in tr for e in redact(s.events)],
+    kernel = counting.fit(g, [redact(s.events) for s in tr],
                           horizon_s=259_200.0 * len(tr), corpus_id="arms", seed=0)
     print(f"  {len(kernel.edges)} edges, rho={kernel.spectral_radius:.3f}")
     print("computing betweenness...")

@@ -122,7 +122,7 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         train = pool.map(_events, train_jobs, chunksize=1)
         test = pool.map(_events, test_jobs, chunksize=1)
 
-    learned = counting.fit(g, [e for s in train for e in redact(s.events)],
+    learned = counting.fit(g, [redact(s.events) for s in train],
                            horizon_s=259_200.0 * len(train), corpus_id="h2train", seed=0)
     print(f"  learned kernel: {len(learned.edges)} edges, rho={learned.spectral_radius:.3f}")
 

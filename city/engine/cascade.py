@@ -84,7 +84,8 @@ class Indices:
 
 class CascadeEngine:
     def __init__(self, g: CityGraph, hazard: HazardField, seed: int, tick_s: float = 60.0,
-                 protected: dict[str, float] | None = None, protect_at_s: float = 0.0):
+                 protected: dict[str, float] | None = None, protect_at_s: float = 0.0,
+                 event_prefix: str = ""):
         """`protected` maps node_id -> protection in [0,1], applied at
         `protect_at_s`. This is how an arm's chosen intervention is tested: the
         real engine re-runs on the same seed with the protection in place, so
@@ -108,6 +109,11 @@ class CascadeEngine:
         self._tick = 0
         self.events: list[Event] = []
         self._eid = 0
+        # Event ids must be unique ACROSS scenarios, not just within one. They
+        # used to restart at e000001 every run, so pooling a training corpus
+        # collided 8,263 of 12,877 ids and silently overwrote mined links.
+        # See docs/FINDINGS.md.
+        self._prefix = event_prefix
         self.world = WorldState(tick_s=tick_s)
         for n in g.nodes:
             base = float(n.capacity) if n.capacity else 100.0
@@ -127,7 +133,7 @@ class CascadeEngine:
 
     def _emit(self, node_id: str, kind: str, severity: float, cause: str | None) -> str:
         self._eid += 1
-        eid = f"e{self._eid:06d}"
+        eid = f"{self._prefix}e{self._eid:06d}"
         s = self.world.nodes[node_id]
         # The commodity detector: loud when a node is stressed, blind to position.
         # Deliberately position-agnostic — that is the whole of baseline arm A1.

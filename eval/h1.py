@@ -117,8 +117,8 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
         test = pool.map(_events, test_jobs, chunksize=2)
 
     g = chennai.build()
-    all_train_events = [e for s in train for e in redact(s.events)]
-    kernel = counting.fit(g, all_train_events, horizon_s=259_200.0 * len(train),
+    train_corpora = [redact(s.events) for s in train]   # per scenario, never pooled flat
+    kernel = counting.fit(g, train_corpora, horizon_s=259_200.0 * len(train),
                           corpus_id=f"train{len(train)}", seed=0)
     print(f"  kernel: {len(kernel.edges)} edges, rho={kernel.spectral_radius:.3f}")
 

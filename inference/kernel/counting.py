@@ -28,16 +28,30 @@ N_BOOTSTRAP = 200
 
 def fit(
     graph: CityGraph,
-    events: list[Event],
+    events: list[Event] | list[list[Event]],
     *,
     window_s: float = DEFAULT_WINDOW_S,
     horizon_s: float | None = None,
     corpus_id: str = "adhoc",
     seed: int = 0,
 ) -> Kernel:
-    """Fit from OBSERVABLE events only. `events` must already be redacted."""
+    """Fit from OBSERVABLE events only. `events` must already be redacted.
+
+    Pass a LIST OF SCENARIOS (`[[Event, ...], [Event, ...]]`) whenever the
+    corpus spans more than one run. A flat list is accepted and treated as a
+    single scenario, which is correct only if it really is one — every scenario
+    shares the same 0..horizon clock, so a pooled flat list lets the miner
+    attribute a failure in one run to a failure in another.
+    """
+    corpora: list[list[Event]]
+    if events and isinstance(events[0], list):
+        corpora = events  # type: ignore[assignment]
+    else:
+        corpora = [events]  # type: ignore[list-item]
+    flat: list[Event] = [e for c in corpora for e in c]
+
     miner = NearMissMiner(graph, window_s)
-    links = miner.links(events)
+    links = miner.links_many(corpora)
 
     # one parent per child, matching what the chain builder commits to
     best: dict[str, object] = {}
@@ -48,9 +62,9 @@ def fit(
         ):
             best[l.child] = l
 
-    node_of = {e.event_id: e.node_id for e in events}
+    node_of = {e.event_id: e.node_id for e in flat}
     n_events_at: dict[str, int] = defaultdict(int)
-    for e in events:
+    for e in flat:
         if e.kind == "failed":
             n_events_at[e.node_id] += 1
 
@@ -104,7 +118,7 @@ def fit(
             ci_low=float(lo), ci_high=float(hi), estimator="counting",
         )
 
-    T = horizon_s or (max((e.t for e in events), default=1.0) or 1.0)
+    T = horizon_s or (max((e.t for e in flat), default=1.0) or 1.0)
     mu = {n.id: n_events_at.get(n.id, 0) / T for n in graph.nodes}
 
     # rho(G) is the SPECTRAL RADIUS of the branching matrix, not the max row

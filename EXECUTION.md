@@ -203,8 +203,22 @@ Not a wish. A checklist Lane D owns and CI enforces.
 
 ---
 
-## 12. Open decisions — resolve before hour 6
+## 12. Open decisions — RESOLVED
 
-1. **Submission deadline and team size.** Everything above is phase-gated; these two numbers set the cut line in §7.
-2. **Chennai topology fidelity.** Real OSM extract with anonymised utility placement, or a Micropolis-style synthetic city geo-anchored to Chennai? Real is more compelling and slower. Lane A decides at hour 4 and records it in `docs/02-CITY-SPEC.md`.
-3. **Does I³ run on our hardware?** If Icube needs a GPU we do not have, arm A5 becomes "published numbers, not reproduced" and we say so explicitly rather than dropping the comparison.
+All three are closed. Kept here rather than deleted, because what a decision was
+weighed against is worth as much as the decision.
+
+1. **Timeline: 72 hours.** Phase plan recompressed accordingly and the cut order
+   pre-committed so it would not be renegotiated by tired people on day 3. See
+   `docs/DECISIONS.md`.
+2. **Chennai topology: geo-anchored procedural, not an OSM extract.** Asset-level
+   utility data is not public in India, so power and water topology is
+   synthesised at the real city's scale and shape. Stated in
+   `docs/LIMITATIONS.md` and on the page, never left for a judge to discover.
+3. **I³ does not run here.** Arm A5 is reported as **"published numbers, not
+   reproduced"** in every table it appears in, exactly as this section said it
+   should be — stated rather than quietly dropped.
+
+Two further decisions were forced later and are recorded in `docs/DECISIONS.md`:
+the contract amendment adding `Node.protected_class`, and the calibration of
+hazard intensity after every scenario was found to be saturating.
