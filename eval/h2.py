@@ -143,7 +143,7 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
     # the largest value offered, with RMSE still falling monotonically across the
     # whole grid — which means the baseline was capped by the grid rather than
     # calibrated, and any margin over it would have been partly our doing.
-    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 15.0, 30.0]
+    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 15.0, 30.0, 60.0, 120.0, 250.0]
     best_alpha, best_rmse = grid[0], float("inf")
     for alpha in grid:
         dk = declared_kernel(g, alpha, learned.mu)
@@ -211,14 +211,24 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         f"| relative improvement | **{rel:+.1%}** |", "",
         f"## H2 {'HOLDS' if passed else 'DOES NOT HOLD AS STATED'}", "",
         f"Pre-registered: >= 15% relative improvement. Measured: **{rel:+.1%}**.", "",
-        "**Where the difference comes from, stated plainly.** A declared matrix contains",
-        "declared dependencies and nothing else. It has no entry for load redistribution",
-        "between flow-peers, because that is not an interdependency anyone writes down —",
-        "and load redistribution is **80% of the propagation mass in this system** (see",
-        "`docs/FINDINGS.md`). So this result is less 'our estimator is better' than",
-        "'most of what propagates failure was never in the matrix to begin with'. That is",
-        "the honest reading, and it is a stronger argument for mining than a tuned",
-        "estimator would have been.", "",
+        "**What this does and does not say.**", "",
+        "A declared matrix contains declared dependencies and nothing else: it has no entry",
+        "for load redistribution between flow-peers, which is **80% of the propagation mass",
+        "in this system** (`docs/FINDINGS.md`). Mining recovers that structure and a declared",
+        "matrix cannot. What this test shows is that **recovering it does not translate into",
+        "better cascade-volume prediction** — with the same background rate on both sides,",
+        "the declared matrix is slightly the better volume predictor.", "",
+        "An earlier version of this comparison had the mined kernel ahead by 13.8%. That",
+        "margin was ours by construction: the declared baseline was built with `mu = 0`",
+        "while the learned kernel carried the Hawkes background term. A base failure rate is",
+        "something any operator computes by counting and is not what H2 contests, so both",
+        "sides now get the same one. The advantage did not survive it.", "",
+        f"The declared matrix's one free parameter was calibrated on train over "
+        f"{len(grid)} values and chose {best_alpha}"
+        + ("" if best_alpha not in (grid[0], grid[-1]) else
+           " — **on the edge of the grid, so the baseline may still be capped rather than "
+           "calibrated, and that bias runs in our favour**")
+        + ".", "",
     ]
     (OUT / "h2.md").write_text("\n".join(lines) + "\n")
     print("\n".join(lines))

@@ -328,17 +328,17 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
   <p class="note" style="margin-top:12px">ROC-AUC on held-out scenarios, on a seed range never previously scored. The line marks chance (0.500). <b>Anomaly score sits below it</b> — ranking alerts by how loud they are is slightly worse than a coin. We also scored the test set three times while chasing two integration bugs, against a protocol that says touch it once; the reported number was regenerated on fresh seeds and the violation is disclosed rather than dropped.</p>
 
   <h3 style="font-size:15px;margin-top:34px">The seven-arm ablation — one mechanism per arm</h3>
-  <p class="note" style="margin-top:6px">36 held-out scenarios, budget 5 interventions. Each arm adds exactly one mechanism. Interventions are applied in the engine and re-run on the same seed with paired randomness — a true counterfactual, not a score under our own rollout model. <b>A5 — I³ (Tsinghua, arXiv 2503.02890) was not reproduced on our hardware; published numbers only, stated rather than quietly dropped.</b></p>
+  <p class="note" style="margin-top:6px">60 held-out scenarios, budget 5 interventions, one mechanism per arm. Interventions are applied in the engine and re-run on the same seed with paired randomness — a true counterfactual, not a score under our own rollout model. <b>Read the last two columns.</b> Arm <b>AR</b> protects five assets at random and prevents damage anyway, so &ldquo;prevented more than doing nothing&rdquo; is not the bar; the verdict is a Wilcoxon signed-rank test on the paired per-scenario difference against that baseline, Holm-corrected. <b>Arms clearing it: A1, A2.</b> <b>A5 &mdash; I³ (Tsinghua, arXiv 2503.02890) was not reproduced on our hardware; published numbers only, stated rather than quietly dropped.</b></p>
   <div class="tblwrap">
   <table>
-    <thead><tr><th>Arm</th><th>Mechanism</th><th>Damage</th><th>Prevented</th><th>%</th><th>% of oracle</th></tr></thead>
-    <tbody>      <tr><td class="n">A0</td><td>do nothing</td><td class="n">9,308,690</td><td class="n">0</td><td class="n">0.0%</td><td class="n">0%</td></tr>
-      <tr><td class="n">AR</td><td>**random 5 assets (chance)**</td><td class="n">9,328,647</td><td class="n">-19,957</td><td class="n">-0.2%</td><td class="n">-1%</td></tr>
-      <tr><td class="n">A1</td><td>rank by anomaly score</td><td class="n">9,241,688</td><td class="n">67,002</td><td class="n">0.7%</td><td class="n">3%</td></tr>
-      <tr><td class="n">A2</td><td>+ static betweenness</td><td class="n">8,329,792</td><td class="n">978,899</td><td class="n">10.5%</td><td class="n">46%</td></tr>
-      <tr><td class="n">A3</td><td>+ branching ratio</td><td class="n">9,275,331</td><td class="n">33,359</td><td class="n">0.4%</td><td class="n">2%</td></tr>
-      <tr><td class="n">A4</td><td>+ counterfactual search</td><td class="n">9,317,747</td><td class="n">-9,057</td><td class="n">-0.1%</td><td class="n">-0%</td></tr>
-      <tr><td class="n">A6</td><td>oracle (perfect foresight)</td><td class="n">7,171,090</td><td class="n">2,137,600</td><td class="n">23.0%</td><td class="n">100%</td></tr></tbody>
+    <thead><tr><th>Arm</th><th>Mechanism</th><th>Prevented</th><th>%</th><th>vs chance</th><th>Verdict</th><th>% of oracle</th></tr></thead>
+    <tbody>      <tr><td class="n">A0</td><td>do nothing</td><td class="n">0</td><td class="n">0.0%</td><td class="n">5,960</td><td>&mdash;</td><td class="n">0%</td></tr>
+      <tr><td class="n">AR</td><td>**random 5 assets (chance)**</td><td class="n">-5,960</td><td class="n">-0.1%</td><td class="n">0</td><td>&mdash;</td><td class="n">-0%</td></tr>
+      <tr><td class="n">A1</td><td>rank by anomaly score</td><td class="n">97,283</td><td class="n">0.9%</td><td class="n">103,244</td><td><span class="tag pass">beats chance</span></td><td class="n">3%</td></tr>
+      <tr><td class="n">A2</td><td>+ static betweenness</td><td class="n">1,874,770</td><td class="n">18.4%</td><td class="n">1,880,730</td><td><span class="tag pass">beats chance</span></td><td class="n">64%</td></tr>
+      <tr><td class="n">A3</td><td>+ branching ratio</td><td class="n">-23,501</td><td class="n">-0.2%</td><td class="n">-17,540</td><td><span class="tag fail">not vs chance</span></td><td class="n">-1%</td></tr>
+      <tr><td class="n">A4</td><td>+ counterfactual search</td><td class="n">35,258</td><td class="n">0.3%</td><td class="n">41,219</td><td><span class="tag fail">not vs chance</span></td><td class="n">1%</td></tr>
+      <tr><td class="n">A6</td><td>oracle (perfect foresight)</td><td class="n">2,915,060</td><td class="n">28.6%</td><td class="n">2,921,020</td><td><span class="tag fail">not vs chance</span></td><td class="n">100%</td></tr></tbody>
   </table>
   </div>
 
@@ -395,7 +395,7 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
   <span class="mono">github.com/swetank18/firebreak</span>
   <span>Chennai · 1,069 assets · 1,000+ scenarios</span>
   <span style="margin-left:auto">Numbers regenerate from <span class="mono">eval/</span>. None typed by hand.</span>
-  <span class="mono">build 81976c6 · 2026-09-09</span>
+  <span class="mono">build 3378666 · 2026-09-09</span>
 </footer>
 </div>
 

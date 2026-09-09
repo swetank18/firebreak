@@ -3,7 +3,7 @@
   "n_test": 30,
   "observe_frac": 0.25,
   "n_rollouts": 400,
-  "declared_alpha_calibrated_on_train": 8.0,
+  "declared_alpha_calibrated_on_train": 30.0,
   "declared_alpha_grid": [
     0.05,
     0.1,
@@ -16,17 +16,22 @@
     2.0,
     3.0,
     5.0,
-    8.0
+    8.0,
+    15.0,
+    30.0,
+    60.0,
+    120.0,
+    250.0
   ],
-  "declared_alpha_on_grid_edge": true,
+  "declared_alpha_on_grid_edge": false,
   "mean_predicted_learned": 188.7,
-  "mean_predicted_declared": 2.0,
+  "mean_predicted_declared": 155.5,
   "declared_edges": 281,
   "learned_edges": 2790,
   "mean_actual_volume": 264.7,
   "rmse_learned": 261.03,
-  "rmse_declared": 302.77,
-  "relative_improvement": 0.1378,
+  "rmse_declared": 254.3,
+  "relative_improvement": -0.0265,
   "predicted": ">= 0.15 relative improvement",
   "H2_PASSED": false
 }

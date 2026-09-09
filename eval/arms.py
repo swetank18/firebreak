@@ -216,6 +216,19 @@ def main(n_seeds: int = 20) -> int:
     with mp.Pool(min(mp.cpu_count(), 12)) as pool:
         rows = pool.map(_one, jobs, chunksize=1)
 
+    return analyse(rows, len(kernel.edges))
+
+
+def analyse(rows: list[dict], kernel_edges: int) -> int:
+    """Everything downstream of the simulation.
+
+    Separated so the analysis can be redone from the per-scenario rows persisted
+    in `arms.json` without re-running 60 scenarios x 140 engine calls. An
+    experiment you must re-run to change an estimator, or to fix how a row is
+    rendered, is one where those choices get made for their answers.
+
+        python eval/arms.py --reanalyse
+    """
     OUT.mkdir(parents=True, exist_ok=True)
     labels = {"A0": "do nothing", "AR": "**random 5 assets (chance)**",
               "A1": "rank by anomaly score",
@@ -294,6 +307,10 @@ def main(n_seeds: int = 20) -> int:
     # Holm-Bonferroni across the four arms actually being tested. Reported
     # alongside the unadjusted p, because testing four arms and quoting the
     # smallest raw p is how a null result becomes a finding.
+    # The Holm family is the four arms that are actually competing hypotheses.
+    # A6 is the ceiling, not a hypothesis, so it is not in the family and must
+    # not be rendered as failing the test it was never entered into — it won
+    # every scenario. A0 and AR are the baselines themselves.
     tested = [t for t in table if t["arm"] in ("A1", "A2", "A3", "A4")]
     for rank, t in enumerate(sorted(tested, key=lambda x: x["p_wilcoxon_vs_chance"])):
         t["p_holm"] = min(1.0, t["p_wilcoxon_vs_chance"] * (len(tested) - rank))
@@ -301,6 +318,8 @@ def main(n_seeds: int = 20) -> int:
         t.setdefault("p_holm", None)
         t["p_wilcoxon_vs_chance"] = (None if t["arm"] in ("A0", "AR")
                                      else float(f"{t['p_wilcoxon_vs_chance']:.2e}"))
+        t["role"] = ("baseline" if t["arm"] in ("A0", "AR")
+                     else "ceiling" if t["arm"] == "A6" else "arm")
         t["significant_vs_chance"] = bool(
             t.get("p_holm") is not None and t["p_holm"] < 0.05)
 
@@ -311,7 +330,7 @@ def main(n_seeds: int = 20) -> int:
               # for their answers.
               "per_scenario": [{k: v for k, v in r.items() if not k.endswith("_picks")}
                                for r in rows],
-              "kernel_edges": len(kernel.edges), "arms": table,
+              "kernel_edges": kernel_edges, "arms": table,
               "chance_arm": "AR",
               "note": ("Read vs_chance, not prevented. A random 5-asset pick already "
                        "prevents damage; the only honest question is whether an arm "
@@ -341,8 +360,12 @@ def main(n_seeds: int = 20) -> int:
          "|---|---|---|---|---|---|---|---|---|---|"]
     for t in table:
         lo, hi = t["prevented_ci"]
-        if t["arm"] in ("A0", "AR"):
+        if t["role"] == "baseline":
             mark, ptxt, wr, med = "—", "—", "—", "—"
+        elif t["role"] == "ceiling":
+            mark = "*ceiling, not a tested arm*"
+            ptxt = f"{t['p_wilcoxon_vs_chance']:.1e} (unadjusted)"
+            wr, med = f"{t['win_rate_vs_chance']:.0%}", f"{t['median_vs_chance']:,.0f}"
         else:
             mark = "**yes**" if t.get("significant_vs_chance") else "no"
             ph = t.get("p_holm")
@@ -364,4 +387,13 @@ def main(n_seeds: int = 20) -> int:
 
 
 if __name__ == "__main__":
+    import sys
+
+    if "--reanalyse" in sys.argv:
+        prev = json.loads((OUT / "arms.json").read_text())
+        if not prev.get("per_scenario"):
+            raise SystemExit("arms.json has no per_scenario rows; run the ablation first.")
+        print(f"re-analysing {len(prev['per_scenario'])} persisted scenarios "
+              "— no engine runs")
+        raise SystemExit(analyse(prev["per_scenario"], prev.get("kernel_edges", 0)))
     raise SystemExit(main())
