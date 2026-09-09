@@ -1,0 +1,32 @@
+{
+  "n_train_scenarios": 80,
+  "n_test_scenarios": 80,
+  "n_events_scored": 177712,
+  "n_cascade_events": 36411,
+  "base_rate": 0.2049,
+  "kernel_edges": 1368,
+  "kernel_rho": 0.0338,
+  "auc_anomaly_score": 0.4633,
+  "auc_anomaly_ci": [
+    0.4593,
+    0.4662
+  ],
+  "auc_branching_ratio": 0.6207,
+  "auc_branching_ci": [
+    0.6181,
+    0.6236
+  ],
+  "auc_cascade_reach_depth6": 0.6192,
+  "auc_reach_ci": [
+    0.6167,
+    0.6221
+  ],
+  "delta_best_vs_anomaly": 0.1573,
+  "label2_health_impact": {
+    "base_rate": 0.2165,
+    "auc_anomaly_score": 0.4792,
+    "auc_branching_ratio": 0.708,
+    "delta": 0.2287
+  },
+  "H1_PASSED": false
+}
