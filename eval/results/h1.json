@@ -1,32 +1,41 @@
 {
   "n_train_scenarios": 80,
   "n_test_scenarios": 80,
-  "n_events_scored": 177712,
-  "n_cascade_events": 36411,
-  "base_rate": 0.2049,
-  "kernel_edges": 1368,
-  "kernel_rho": 0.0338,
-  "auc_anomaly_score": 0.4633,
+  "n_events_scored": 52631,
+  "n_cascade_events": 11476,
+  "base_rate": 0.218,
+  "kernel_edges": 4010,
+  "kernel_rho": 0.951,
+  "auc_anomaly_score": 0.4827,
   "auc_anomaly_ci": [
-    0.4593,
-    0.4662
+    0.4771,
+    0.4883
   ],
-  "auc_branching_ratio": 0.6207,
+  "auc_branching_ratio": 0.7316,
   "auc_branching_ci": [
-    0.6181,
-    0.6236
+    0.7275,
+    0.7355
   ],
-  "auc_cascade_reach_depth6": 0.6192,
+  "auc_cascade_reach_depth6": 0.7658,
   "auc_reach_ci": [
-    0.6167,
-    0.6221
+    0.7612,
+    0.7699
   ],
-  "delta_best_vs_anomaly": 0.1573,
+  "auc_static_betweenness": 0.6619,
+  "delta_best_vs_anomaly": 0.283,
   "label2_health_impact": {
-    "base_rate": 0.2165,
-    "auc_anomaly_score": 0.4792,
-    "auc_branching_ratio": 0.708,
-    "delta": 0.2287
+    "base_rate": 0.2126,
+    "auc_anomaly_score": 0.4931,
+    "auc_branching_ratio": 0.7556,
+    "auc_static_betweenness": 0.6469,
+    "delta": 0.2625
   },
-  "H1_PASSED": false
+  "H4": {
+    "predicted": "branching ratio does NOT beat static betweenness by >0.05 AUC",
+    "auc_branching_ratio": 0.7316,
+    "auc_static_betweenness": 0.6619,
+    "delta": 0.0696,
+    "as_predicted": false
+  },
+  "H1_PASSED": true
 }

@@ -2,7 +2,7 @@
   "n_scenarios": 36,
   "budget": 5,
   "protect": 0.9,
-  "kernel_edges": 1094,
+  "kernel_edges": 1829,
   "arms": [
     {
       "arm": "A0",
@@ -16,11 +16,11 @@
     {
       "arm": "A1",
       "mechanism": "rank by anomaly score",
-      "damage": 9274536.3,
-      "prevented": 34154.1,
-      "prevented_pct": 0.37,
-      "hosp_hours_saved": 2.05,
-      "oracle_captured_pct": 1.5
+      "damage": 9241688.3,
+      "prevented": 67002.0,
+      "prevented_pct": 0.72,
+      "hosp_hours_saved": 4.08,
+      "oracle_captured_pct": 4.9
     },
     {
       "arm": "A2",
@@ -29,33 +29,33 @@
       "prevented": 978898.8,
       "prevented_pct": 10.52,
       "hosp_hours_saved": 3.03,
-      "oracle_captured_pct": 9.5
+      "oracle_captured_pct": 8.5
     },
     {
       "arm": "A3",
       "mechanism": "+ branching ratio",
-      "damage": 8388163.5,
-      "prevented": 920526.8,
-      "prevented_pct": 9.89,
-      "hosp_hours_saved": 3.43,
-      "oracle_captured_pct": 4.9
+      "damage": 9275330.9,
+      "prevented": 33359.4,
+      "prevented_pct": 0.36,
+      "hosp_hours_saved": -0.05,
+      "oracle_captured_pct": -0.3
     },
     {
       "arm": "A4",
       "mechanism": "+ counterfactual search",
-      "damage": 9295174.5,
-      "prevented": 13515.9,
-      "prevented_pct": 0.15,
-      "hosp_hours_saved": 3.47,
-      "oracle_captured_pct": 2.1
+      "damage": 9317747.2,
+      "prevented": -9056.9,
+      "prevented_pct": -0.1,
+      "hosp_hours_saved": 2.55,
+      "oracle_captured_pct": -3.3
     },
     {
       "arm": "A6",
       "mechanism": "oracle (perfect foresight)",
-      "damage": 6606297.2,
-      "prevented": 2702393.2,
-      "prevented_pct": 29.03,
-      "hosp_hours_saved": 11.09,
+      "damage": 6984177.3,
+      "prevented": 2324513.0,
+      "prevented_pct": 24.97,
+      "hosp_hours_saved": 8.69,
       "oracle_captured_pct": 100.0
     }
   ],

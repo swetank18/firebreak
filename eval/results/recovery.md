@@ -10,10 +10,10 @@ If not, near-misses are not observable and the premise fails.
 
 | metric | value |
 |---|---|
-| precision | **0.827** |
-| recall | **0.875** |
-| F1 | 0.850 |
-| chance precision (random admissible parent) | 0.678 |
+| precision | **0.855** |
+| recall | **0.898** |
+| F1 | 0.876 |
+| chance precision (random admissible parent) | 0.718 |
 | lift over chance (diagnostic, not the gate) | 1.2x |
 
 The gate is absolute precision and recall: can chains be recovered from
@@ -27,8 +27,8 @@ the same shape as H4. See `docs/FINDINGS.md`.
 
 | relation | share of mined links | precision |
 |---|---|---|
-| depends_on | 19.6% | 0.991 |
-| flow_sibling | 80.4% | 0.786 |
+| depends_on | 19.0% | 0.996 |
+| flow_sibling | 81.0% | 0.819 |
 
 ## THESIS HOLDS
 

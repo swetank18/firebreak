@@ -1,0 +1,15 @@
+{
+  "n_train": 24,
+  "n_test": 30,
+  "observe_frac": 0.25,
+  "n_rollouts": 400,
+  "declared_alpha_calibrated_on_train": 1.0,
+  "declared_edges": 281,
+  "learned_edges": 2790,
+  "mean_actual_volume": 264.7,
+  "rmse_learned": 301.81,
+  "rmse_declared": 303.08,
+  "relative_improvement": 0.0042,
+  "predicted": ">= 0.15 relative improvement",
+  "H2_PASSED": false
+}

@@ -162,7 +162,14 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
     h4_as_predicted = bool(h4_delta <= 0.05)
 
     best = max(auc_n, auc_r)
-    passed = bool(0.40 <= auc_a <= 0.62 and best >= 0.70)
+    # THE PRE-REGISTERED CRITERION, and nothing else. This used to read
+    # `0.40 <= auc_a <= 0.62 and best >= 0.70`, a looser bar invented after the
+    # fact, so the report printed "H1 HOLDS" directly above a measured 0.766
+    # against a pre-registered 0.80. A verdict scored against a criterion the
+    # pre-registration does not contain is not a pre-registered verdict.
+    prereg_anomaly_ok = bool(0.45 <= auc_a <= 0.60)
+    prereg_ours_ok = bool(best >= 0.80)
+    passed = bool(prereg_anomaly_ok and prereg_ours_ok)
     report = {
         "n_train_scenarios": len(train), "n_test_scenarios": len(test),
         "n_events_scored": len(rows), "n_cascade_events": int(y.sum()),
@@ -188,6 +195,8 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
             "as_predicted": h4_as_predicted,
         },
         "H1_PASSED": passed,
+        "H1_prereg_anomaly_in_range": prereg_anomaly_ok,
+        "H1_prereg_ours_ge_080": prereg_ours_ok,
     }
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "h1.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -214,8 +223,14 @@ def main(n_train: int = 20, n_test: int = 20) -> int:
         f"| static betweenness | {h_c:.3f} |",
         f"| delta | **{h_n - h_a:+.3f}** |", "",
         f"## H1 {'HOLDS' if passed else 'DOES NOT HOLD AS STATED'}", "",
-        "Pre-registered prediction was anomaly AUC in [0.45, 0.60] and ours >= 0.80.",
-        f"Measured: anomaly **{auc_a:.3f}**, ours **{best:.3f}**.", "",
+        "Pre-registered: anomaly AUC in [0.45, 0.60] **and** ours >= 0.80. Both halves,",
+        "judged against the pre-registration and not against anything easier.", "",
+        f"- anomaly **{auc_a:.3f}** — {'confirmed' if prereg_anomaly_ok else 'OUTSIDE the predicted range'}",
+        f"- ours **{best:.3f}** — {'confirmed' if prereg_ours_ok else 'SHORT of the 0.80 we claimed'}",
+        "", ("Both halves hold." if passed else
+             "The half the pitch rests on holds: ranking alerts by how loud they are predicts "
+             "catastrophe no better than a coin. Our own target for the other half was "
+             "optimistic, and we say so rather than moving it."), "",
         "## H4 — the one we pre-registered ourselves to lose", "",
         "Predicted: the learned kernel does **not** beat static betweenness centrality by a",
         "wide margin (A3 - A2 <= 0.05 AUC). We said the kernel would earn its place in",

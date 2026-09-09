@@ -128,7 +128,11 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
 
     # Calibrate the declared matrix's one free parameter ON TRAINING DATA.
     print("calibrating the declared matrix on train (so it does not lose on scale)...")
-    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0]
+    # The grid must not end where the optimum is. A first run chose alpha = 1.0,
+    # the largest value offered, with RMSE still falling monotonically across the
+    # whole grid — which means the baseline was capped by the grid rather than
+    # calibrated, and any margin over it would have been partly our doing.
+    grid = [0.05, 0.1, 0.2, 0.35, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0]
     best_alpha, best_rmse = grid[0], float("inf")
     for alpha in grid:
         dk = declared_kernel(g, alpha)
@@ -141,6 +145,9 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         if r < best_rmse:
             best_alpha, best_rmse = alpha, r
     print(f"  chosen alpha = {best_alpha}")
+    if best_alpha in (grid[0], grid[-1]):
+        print(f"  WARNING: chosen alpha sits on the edge of the grid {grid} — the declared "
+              "baseline may be grid-capped rather than calibrated, which would flatter us.")
     dk = declared_kernel(g, best_alpha)
 
     print(f"scoring {len(test)} held-out scenarios...")
@@ -158,6 +165,10 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         "n_train": len(train), "n_test": len(test),
         "observe_frac": OBSERVE_FRAC, "n_rollouts": N_ROLLOUTS,
         "declared_alpha_calibrated_on_train": best_alpha,
+        "declared_alpha_grid": grid,
+        "declared_alpha_on_grid_edge": bool(best_alpha in (grid[0], grid[-1])),
+        "mean_predicted_learned": round(float(lrn.mean()), 1),
+        "mean_predicted_declared": round(float(dec.mean()), 1),
         "declared_edges": len(dk.edges), "learned_edges": len(learned.edges),
         "mean_actual_volume": round(float(actual.mean()), 1),
         "rmse_learned": round(rmse_l, 2),
@@ -179,7 +190,9 @@ def main(n_train: int = 8, n_test: int = 10) -> int:
         f"- declared matrix: {len(dk.edges)} declared edges, uniform alpha = {best_alpha} "
         "(calibrated on train, so it does not lose for want of a scale factor)",
         f"- learned kernel: {len(learned.edges)} edges mined from near-misses",
-        f"- mean actual cascade volume: {actual.mean():.1f} assets", "",
+        f"- mean actual cascade volume: **{actual.mean():.1f}** assets, against "
+        f"{lrn.mean():.1f} predicted by the learned kernel and {dec.mean():.1f} by the "
+        "declared matrix", "",
         "| kernel | RMSE on cascade volume |", "|---|---|",
         f"| declared / expert-elicited | {rmse_d:.1f} |",
         f"| **learned from near-misses** | **{rmse_l:.1f}** |",
