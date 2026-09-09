@@ -49,8 +49,8 @@ Six, running in parallel from hour 6 behind a frozen contract.
 Declared loudly, never hidden.
 
 - **InfraRisk** (`srijithbalakrishnan/dreaminsg-integrated-model`, BSD-3) — peer-reviewed water–power–transport interdependent failure simulation. Our substrate.
-- **I³ / Icube** (Tsinghua FIB Lab, arXiv 2503.02890) — current SOTA for interdependent urban cascade prediction. **Our baseline arm A5, not our strawman.**
-- **PI-GN-JODE** (arXiv 2603.20838) — physics-informed graph neural jump ODEs; source for the heavy-tailed cascade-size check.
+- **I³ / Icube** (Tsinghua FIB Lab, arXiv 2503.02890) — current SOTA for interdependent urban cascade prediction. Intended as baseline arm A5, not as a strawman. **We did not reproduce it on our hardware, so A5 is published numbers only** — stated in the arms table where the row would be, rather than the comparison being quietly dropped.
+- **PI-GN-JODE** (arXiv 2603.20838) — physics-informed graph neural jump ODEs; source for the heavy-tailed cascade-size check. **That check failed here and we report it**: our tail is exponential, not power-law, and the literature's result is established for transmission grids rather than multi-sector lifeline networks.
 - **Hawkes / ETAS** — the kernel, borrowed from seismology.
 - **Aviation ASRS / NASA precursor work** — the licence for mining near-misses.
 
