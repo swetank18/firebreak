@@ -88,19 +88,43 @@ def _auc_bars() -> str:
 
 
 def _arms() -> tuple[str, str]:
+    """The arms table, led by the comparison that matters.
+
+    `prevented` on its own is not a result: protecting five assets at random
+    prevents damage too. The verdict column is the paired rank test against that
+    baseline, and arms that do not clear it are shown as not clearing it.
+    """
     a = _res("arms")
-    rows = "\n".join(
-        f"      <tr><td class=\"n\">{t['arm']}</td><td>{t['mechanism']}</td>"
-        f"<td class=\"n\">{t['damage']:,.0f}</td><td class=\"n\">{t['prevented']:,.0f}</td>"
-        f"<td class=\"n\">{t['prevented_pct']:.1f}%</td>"
-        f"<td class=\"n\">{t['oracle_captured_pct']:.0f}%</td></tr>"
-        for t in a["arms"])
-    cap = (f"{a['n_scenarios']} held-out scenarios, budget {a['budget']} interventions. "
-           "Each arm adds exactly one mechanism. Interventions are applied in the engine "
-           "and re-run on the same seed with paired randomness — a true counterfactual, "
-           "not a score under our own rollout model. "
-           "<b>A5 — I\u00b3 (Tsinghua, arXiv 2503.02890) was not reproduced on our hardware; "
-           "published numbers only, stated rather than quietly dropped.</b>")
+    cells = []
+    for t in a["arms"]:
+        if t["arm"] in ("A0", "AR"):
+            verdict = "&mdash;"
+        elif t.get("significant_vs_chance", t.get("beats_chance_95")):
+            verdict = '<span class="tag pass">beats chance</span>'
+        else:
+            verdict = '<span class="tag fail">not vs chance</span>'
+        cells.append(
+            f"      <tr><td class=\"n\">{t['arm']}</td><td>{t['mechanism']}</td>"
+            f"<td class=\"n\">{t['prevented']:,.0f}</td>"
+            f"<td class=\"n\">{t['prevented_pct']:.1f}%</td>"
+            f"<td class=\"n\">{t['vs_chance']:,.0f}</td>"
+            f"<td>{verdict}</td>"
+            f"<td class=\"n\">{t['oracle_captured_pct']:.0f}%</td></tr>")
+    rows = "\n".join(cells)
+    beat = [t["arm"] for t in a["arms"]
+            if t.get("significant_vs_chance", t.get("beats_chance_95"))
+            and t["arm"] not in ("A0", "AR")]
+    cap = (f"{a['n_scenarios']} held-out scenarios, budget {a['budget']} interventions, one "
+           "mechanism per arm. Interventions are applied in the engine and re-run on the same "
+           "seed with paired randomness — a true counterfactual, not a score under our own "
+           "rollout model. <b>Read the last two columns.</b> Arm <b>AR</b> protects five "
+           "assets at random and prevents damage anyway, so &ldquo;prevented more than doing "
+           "nothing&rdquo; is not the bar; the verdict is a Wilcoxon signed-rank test on the "
+           "paired per-scenario difference against that baseline, Holm-corrected. "
+           + (f"<b>Arms clearing it: {', '.join(beat)}.</b> " if beat
+              else "<b>No arm clears it except the oracle.</b> ")
+           + "<b>A5 &mdash; I\u00b3 (Tsinghua, arXiv 2503.02890) was not reproduced on our "
+             "hardware; published numbers only, stated rather than quietly dropped.</b>")
     return rows, cap
 
 
