@@ -80,6 +80,7 @@ Built and measured. Every number below is produced by a script in `eval/` and re
 | Counterfactual intervention search with deadlines | `decision/`, `eval/arms.py` |
 | Seven-arm ablation, H1–H4, pre-registration diff | `eval/results/results.md`, `eval/results/prereg_diff.md` |
 | The six-beat demo, offline | `www/index.html`, `scripts/export_demo.py` |
+| The decision loop, runnable with no server or uplink | `python -m service.decide` |
 
 **Two of four pre-registered predictions went against us and both are reported** — see `eval/results/prereg_diff.md`. So did the power-law realism check, which is kept and reported as failing rather than deleted. What we found by measuring rather than by reading is in `docs/FINDINGS.md`, and what does not work is in `docs/LIMITATIONS.md`, written by us before a judge writes it for us.
 
@@ -95,4 +96,18 @@ python eval/arms.py             # the seven-arm ablation
 python eval/report.py           # assembles results.md and the pre-registration diff
 python scripts/export_demo.py   # regenerates the demo scenario
 python scripts/build_site.py    # rebuilds www/index.html from the results
+bash scripts/run_eval.sh        # all of the above, in dependency order
 ```
+
+The decision path runs on its own, with no server and no network — which is the
+whole of the edge-deployability claim, so it is a command rather than a slide:
+
+```bash
+python -m service.decide --hazard monsoon_flood --seed 90100
+```
+
+It prints one `Decision` as JSON: the alarms it considers dangerous and why, what
+happens if nobody acts, the cheapest action that changes that, and **the minute
+at which that option expires**. Every step between the alarm and the instruction
+is a Hawkes kernel, a Monte Carlo rollout and an enumeration. No LLM produces any
+part of it.
