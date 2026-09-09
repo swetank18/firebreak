@@ -1,0 +1,800 @@
+{
+  "built_at": "2026-09-09T00:00:00Z",
+  "city_id": "tiny_v1",
+  "edges": [
+    {
+      "attrs": {},
+      "dst": "power.grid_01",
+      "id": "power.ss_01->power.grid_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.ss_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.grid_01",
+      "id": "power.ss_02->power.grid_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.ss_02"
+    },
+    {
+      "attrs": {},
+      "dst": "power.ss_01",
+      "id": "power.fdr_01->power.ss_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.fdr_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.ss_01",
+      "id": "power.fdr_02->power.ss_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.fdr_02"
+    },
+    {
+      "attrs": {},
+      "dst": "power.ss_02",
+      "id": "power.fdr_03->power.ss_02",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.fdr_03"
+    },
+    {
+      "attrs": {},
+      "dst": "power.ss_02",
+      "id": "power.fdr_04->power.ss_02",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "power.fdr_04"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_01",
+      "id": "water.pump_01->power.fdr_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "water.pump_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_02",
+      "id": "water.wtp_01->power.fdr_02",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "water.wtp_01"
+    },
+    {
+      "attrs": {},
+      "dst": "water.pump_01",
+      "id": "water.main_01->water.pump_01",
+      "nominal_delay_s": 600.0,
+      "relation": "flow",
+      "src": "water.main_01"
+    },
+    {
+      "attrs": {},
+      "dst": "water.wtp_01",
+      "id": "water.main_03->water.wtp_01",
+      "nominal_delay_s": 900.0,
+      "relation": "flow",
+      "src": "water.main_03"
+    },
+    {
+      "attrs": {},
+      "dst": "water.wtp_01",
+      "id": "water.res_01->water.wtp_01",
+      "nominal_delay_s": 1800.0,
+      "relation": "flow",
+      "src": "water.res_01"
+    },
+    {
+      "attrs": {},
+      "dst": "water.main_01",
+      "id": "health.hosp_01->water.main_01",
+      "nominal_delay_s": 7200.0,
+      "relation": "depends_on",
+      "src": "health.hosp_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_01",
+      "id": "health.hosp_01->power.fdr_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "health.hosp_01"
+    },
+    {
+      "attrs": {},
+      "dst": "health.gen_hosp_01",
+      "id": "health.hosp_01->health.gen_hosp_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "health.hosp_01"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_03",
+      "id": "health.gen_hosp_01->transport.road_03",
+      "nominal_delay_s": 21600.0,
+      "relation": "depends_on",
+      "src": "health.gen_hosp_01"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_07",
+      "id": "health.gen_hosp_02->transport.road_07",
+      "nominal_delay_s": 28800.0,
+      "relation": "depends_on",
+      "src": "health.gen_hosp_02"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_03",
+      "id": "water.pump_02->power.fdr_03",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "water.pump_02"
+    },
+    {
+      "attrs": {},
+      "dst": "water.pump_02",
+      "id": "water.main_02->water.pump_02",
+      "nominal_delay_s": 600.0,
+      "relation": "flow",
+      "src": "water.main_02"
+    },
+    {
+      "attrs": {},
+      "dst": "water.main_02",
+      "id": "health.hosp_02->water.main_02",
+      "nominal_delay_s": 10800.0,
+      "relation": "depends_on",
+      "src": "health.hosp_02"
+    },
+    {
+      "attrs": {},
+      "dst": "health.gen_hosp_02",
+      "id": "health.hosp_02->health.gen_hosp_02",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "health.hosp_02"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_02",
+      "id": "telecom.tower_01->power.fdr_02",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "telecom.tower_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_04",
+      "id": "telecom.tower_02->power.fdr_04",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "telecom.tower_02"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_01",
+      "id": "telecom.tower_03->power.fdr_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "telecom.tower_03"
+    },
+    {
+      "attrs": {},
+      "dst": "power.grid_01",
+      "id": "telecom.bh_01->power.grid_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "telecom.bh_01"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.bh_01",
+      "id": "telecom.tower_01->telecom.bh_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "telecom.tower_01"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.bh_01",
+      "id": "telecom.tower_02->telecom.bh_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "telecom.tower_02"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.bh_01",
+      "id": "telecom.tower_03->telecom.bh_01",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "telecom.tower_03"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.bh_01",
+      "id": "telecom.scada_01->telecom.bh_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "telecom.scada_01"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.scada_01",
+      "id": "water.pump_01->telecom.scada_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "water.pump_01"
+    },
+    {
+      "attrs": {},
+      "dst": "telecom.scada_01",
+      "id": "water.pump_02->telecom.scada_01",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "water.pump_02"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_02",
+      "id": "transport.road_01->transport.road_02",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_01"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_03",
+      "id": "transport.road_02->transport.road_03",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_02"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_04",
+      "id": "transport.road_03->transport.road_04",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_03"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_05",
+      "id": "transport.road_04->transport.road_05",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_04"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_06",
+      "id": "transport.road_05->transport.road_06",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_05"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_07",
+      "id": "transport.road_06->transport.road_07",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_06"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_08",
+      "id": "transport.road_07->transport.road_08",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_07"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_09",
+      "id": "transport.road_08->transport.road_09",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_08"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_10",
+      "id": "transport.road_09->transport.road_10",
+      "nominal_delay_s": 0.0,
+      "relation": "flow",
+      "src": "transport.road_09"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_05",
+      "id": "health.phc_01->transport.road_05",
+      "nominal_delay_s": 14400.0,
+      "relation": "depends_on",
+      "src": "health.phc_01"
+    },
+    {
+      "attrs": {},
+      "dst": "power.fdr_02",
+      "id": "health.phc_01->power.fdr_02",
+      "nominal_delay_s": 0.0,
+      "relation": "depends_on",
+      "src": "health.phc_01"
+    },
+    {
+      "attrs": {},
+      "dst": "transport.road_09",
+      "id": "power.gen_01->transport.road_09",
+      "nominal_delay_s": 36000.0,
+      "relation": "depends_on",
+      "src": "power.gen_01"
+    }
+  ],
+  "nodes": [
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 50000.0,
+      "criticality_weight": 1.0,
+      "id": "power.grid_01",
+      "kind": "intertie",
+      "lat": 13.0827,
+      "layer": "power",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 12000.0,
+      "criticality_weight": 1.0,
+      "id": "power.ss_01",
+      "kind": "substation",
+      "lat": 13.0927,
+      "layer": "power",
+      "lon": 80.28070000000001,
+      "population_served": 18000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 12000.0,
+      "criticality_weight": 1.0,
+      "id": "power.ss_02",
+      "kind": "substation",
+      "lat": 13.0927,
+      "layer": "power",
+      "lon": 80.2607,
+      "population_served": 16000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "power.fdr_01",
+      "kind": "feeder",
+      "lat": 13.1027,
+      "layer": "power",
+      "lon": 80.28070000000001,
+      "population_served": 9000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "power.fdr_02",
+      "kind": "feeder",
+      "lat": 13.1027,
+      "layer": "power",
+      "lon": 80.2907,
+      "population_served": 9000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "power.fdr_03",
+      "kind": "feeder",
+      "lat": 13.1027,
+      "layer": "power",
+      "lon": 80.2607,
+      "population_served": 8000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "power.fdr_04",
+      "kind": "feeder",
+      "lat": 13.1027,
+      "layer": "power",
+      "lon": 80.25070000000001,
+      "population_served": 8000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 2000.0,
+      "criticality_weight": 1.0,
+      "id": "power.gen_01",
+      "kind": "diesel_plant",
+      "lat": 13.072700000000001,
+      "layer": "power",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 60.0,
+      "criticality_weight": 2.0,
+      "id": "water.wtp_01",
+      "kind": "treatment",
+      "lat": 13.1127,
+      "layer": "water",
+      "lon": 80.2707,
+      "population_served": 40000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 30.0,
+      "criticality_weight": 1.8,
+      "id": "water.pump_01",
+      "kind": "pumping_station",
+      "lat": 13.1127,
+      "layer": "water",
+      "lon": 80.28070000000001,
+      "population_served": 22000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": 25.0,
+      "criticality_weight": 1.8,
+      "id": "water.pump_02",
+      "kind": "pumping_station",
+      "lat": 13.1127,
+      "layer": "water",
+      "lon": 80.2607,
+      "population_served": 18000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 10800.0,
+      "capacity": 500.0,
+      "criticality_weight": 1.0,
+      "id": "water.res_01",
+      "kind": "reservoir",
+      "lat": 13.1227,
+      "layer": "water",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "water.main_01",
+      "kind": "trunk_main",
+      "lat": 13.117700000000001,
+      "layer": "water",
+      "lon": 80.2857,
+      "population_served": 12000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "water.main_02",
+      "kind": "trunk_main",
+      "lat": 13.117700000000001,
+      "layer": "water",
+      "lon": 80.2557,
+      "population_served": 10000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "water.main_03",
+      "kind": "trunk_main",
+      "lat": 13.1277,
+      "layer": "water",
+      "lon": 80.2757,
+      "population_served": 8000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_01",
+      "kind": "road_segment",
+      "lat": 13.087700000000002,
+      "layer": "transport",
+      "lon": 80.2667,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_02",
+      "kind": "road_segment",
+      "lat": 13.0927,
+      "layer": "transport",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_03",
+      "kind": "road_segment",
+      "lat": 13.097700000000001,
+      "layer": "transport",
+      "lon": 80.27470000000001,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_04",
+      "kind": "road_segment",
+      "lat": 13.1027,
+      "layer": "transport",
+      "lon": 80.2787,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_05",
+      "kind": "road_segment",
+      "lat": 13.107700000000001,
+      "layer": "transport",
+      "lon": 80.26270000000001,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_06",
+      "kind": "road_segment",
+      "lat": 13.1127,
+      "layer": "transport",
+      "lon": 80.2667,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_07",
+      "kind": "road_segment",
+      "lat": 13.117700000000001,
+      "layer": "transport",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_08",
+      "kind": "road_segment",
+      "lat": 13.1227,
+      "layer": "transport",
+      "lon": 80.27470000000001,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_09",
+      "kind": "road_segment",
+      "lat": 13.1277,
+      "layer": "transport",
+      "lon": 80.2787,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "transport.road_10",
+      "kind": "road_segment",
+      "lat": 13.132700000000002,
+      "layer": "transport",
+      "lon": 80.26270000000001,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 14400.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "telecom.tower_01",
+      "kind": "tower",
+      "lat": 13.097700000000001,
+      "layer": "telecom",
+      "lon": 80.2907,
+      "population_served": 20000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 14400.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "telecom.tower_02",
+      "kind": "tower",
+      "lat": 13.097700000000001,
+      "layer": "telecom",
+      "lon": 80.25070000000001,
+      "population_served": 18000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 10800.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "telecom.tower_03",
+      "kind": "tower",
+      "lat": 13.1277,
+      "layer": "telecom",
+      "lon": 80.28070000000001,
+      "population_served": 15000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 21600.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "telecom.bh_01",
+      "kind": "backhaul",
+      "lat": 13.1027,
+      "layer": "telecom",
+      "lon": 80.2707,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 0.0,
+      "capacity": null,
+      "criticality_weight": 1.0,
+      "id": "telecom.scada_01",
+      "kind": "scada_link",
+      "lat": 13.1127,
+      "layer": "telecom",
+      "lon": 80.2757,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 21600.0,
+      "capacity": null,
+      "criticality_weight": 5.0,
+      "id": "health.hosp_01",
+      "kind": "hospital",
+      "lat": 13.1227,
+      "layer": "health",
+      "lon": 80.2907,
+      "population_served": 6000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 28800.0,
+      "capacity": null,
+      "criticality_weight": 5.0,
+      "id": "health.hosp_02",
+      "kind": "hospital",
+      "lat": 13.1227,
+      "layer": "health",
+      "lon": 80.25070000000001,
+      "population_served": 5000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 7200.0,
+      "capacity": null,
+      "criticality_weight": 2.5,
+      "id": "health.phc_01",
+      "kind": "primary_care",
+      "lat": 13.132700000000002,
+      "layer": "health",
+      "lon": 80.28070000000001,
+      "population_served": 2000,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 21600.0,
+      "capacity": null,
+      "criticality_weight": 4.0,
+      "id": "health.gen_hosp_01",
+      "kind": "backup_generator",
+      "lat": 13.123700000000001,
+      "layer": "health",
+      "lon": 80.2917,
+      "population_served": 0,
+      "protected_class": false
+    },
+    {
+      "attrs": {},
+      "buffer_s": 28800.0,
+      "capacity": null,
+      "criticality_weight": 4.0,
+      "id": "health.gen_hosp_02",
+      "kind": "backup_generator",
+      "lat": 13.123700000000001,
+      "layer": "health",
+      "lon": 80.2497,
+      "population_served": 0,
+      "protected_class": false
+    }
+  ],
+  "source_hash": "d8459b9326b81dbd"
+}

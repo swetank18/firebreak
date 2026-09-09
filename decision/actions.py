@@ -62,29 +62,45 @@ def apply(A: csr_matrix, action: Action, idx: dict[str, int]) -> csr_matrix:
 
 
 def candidates(
-    graph_nodes, idx: dict[str, int], seeds: list[str], reach_hint, *, top_k: int = 24
+    graph_nodes, idx: dict[str, int], seeds: list[str], reach_hint, *, top_k: int = 24,
+    kinds: tuple[str, ...] | None = None, exclude: frozenset[str] = frozenset(),
 ) -> list[Action]:
     """Propose a small, sensible action set.
 
     Enumerating every action on every node is 5n and pointless — almost all of
     them touch nodes the cascade will never reach. Propose against the nodes
     the rollout says are actually exposed.
+
+    `exclude` drops nodes that are ALREADY DOWN. Hardening an asset that failed
+    an hour ago does nothing, and it used to win the ranking anyway: `isolate`
+    is the cheapest action, benefit is divided by cost, so the search spent four
+    of its five picks isolating assets that had already failed. See
+    docs/FINDINGS.md.
+
+    `kinds` restricts the action space to what the evaluating simulator can
+    actually apply. Scoring an action the environment cannot represent, and then
+    applying a different one, measures nothing.
     """
     out: list[Action] = []
+    want = (lambda k: True) if kinds is None else (lambda k: k in kinds)
     ranked = sorted(reach_hint.items(), key=lambda kv: -kv[1])[:top_k]
     for node_id, _ in ranked:
         n = graph_nodes.get(node_id)
-        if n is None:
+        if n is None or node_id in exclude:
             continue
-        out.append(make("isolate", node_id, 1.0))
-        out.append(make("harden", node_id, 0.7))
-        if n.buffer_s > 0:
+        if want("isolate"):
+            out.append(make("isolate", node_id, 1.0))
+        if want("harden"):
+            out.append(make("harden", node_id, 0.7))
+        if want("preposition") and n.buffer_s > 0:
             # only meaningful where there is a reserve to refill
             out.append(make("preposition", node_id, 0.85))
-        if n.population_served > 0:
+        if want("shed") and n.population_served > 0:
             out.append(make("shed", node_id, 0.5))
-    for s in seeds:
-        out.append(make("isolate", s, 1.0))
+    if want("isolate"):
+        for s in seeds:
+            if s not in exclude:
+                out.append(make("isolate", s, 1.0))
     # de-duplicate, keep order
     seen, uniq = set(), []
     for a in out:

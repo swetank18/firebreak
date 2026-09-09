@@ -1,0 +1,152 @@
+{
+  "arm": "A0",
+  "city_id": "tiny_v1",
+  "decisions": [],
+  "events": [
+    {
+      "anomaly_score": 0.7430876706742071,
+      "cause": null,
+      "event_id": "e000001",
+      "kind": "failed",
+      "node_id": "telecom.bh_01",
+      "observed": true,
+      "severity": 0.007524401442159938,
+      "t": 136500.0
+    },
+    {
+      "anomaly_score": 0.9736957271136594,
+      "cause": "e000001",
+      "event_id": "e000002",
+      "kind": "failed",
+      "node_id": "telecom.scada_01",
+      "observed": true,
+      "severity": 1.0,
+      "t": 136500.0
+    },
+    {
+      "anomaly_score": 1.0,
+      "cause": "e000002",
+      "event_id": "e000003",
+      "kind": "failed",
+      "node_id": "water.pump_01",
+      "observed": true,
+      "severity": 1.0,
+      "t": 136800.0
+    },
+    {
+      "anomaly_score": 1.0,
+      "cause": "e000002",
+      "event_id": "e000004",
+      "kind": "failed",
+      "node_id": "water.pump_02",
+      "observed": true,
+      "severity": 1.0,
+      "t": 136800.0
+    },
+    {
+      "anomaly_score": 0.34489679047618155,
+      "cause": null,
+      "event_id": "e000005",
+      "kind": "restored",
+      "node_id": "telecom.bh_01",
+      "observed": true,
+      "severity": 0.0,
+      "t": 142500.0
+    },
+    {
+      "anomaly_score": 0.367406867187301,
+      "cause": null,
+      "event_id": "e000006",
+      "kind": "restored",
+      "node_id": "telecom.scada_01",
+      "observed": true,
+      "severity": 0.0,
+      "t": 142500.0
+    },
+    {
+      "anomaly_score": 0.3308039355847564,
+      "cause": null,
+      "event_id": "e000007",
+      "kind": "restored",
+      "node_id": "water.pump_01",
+      "observed": true,
+      "severity": 0.0,
+      "t": 142800.0
+    },
+    {
+      "anomaly_score": 0.31253013866966767,
+      "cause": null,
+      "event_id": "e000008",
+      "kind": "restored",
+      "node_id": "water.pump_02",
+      "observed": true,
+      "severity": 0.0,
+      "t": 142800.0
+    },
+    {
+      "anomaly_score": 0.699710813227712,
+      "cause": null,
+      "event_id": "e000009",
+      "kind": "failed",
+      "node_id": "telecom.tower_03",
+      "observed": true,
+      "severity": 0.007094537712937991,
+      "t": 242700.0
+    },
+    {
+      "anomaly_score": 0.684316657954637,
+      "cause": "e000009",
+      "event_id": "e000010",
+      "kind": "failed",
+      "node_id": "telecom.tower_01",
+      "observed": true,
+      "severity": 0.11111111111111116,
+      "t": 242700.0
+    },
+    {
+      "anomaly_score": 1.0,
+      "cause": "e000010",
+      "event_id": "e000011",
+      "kind": "failed",
+      "node_id": "telecom.tower_02",
+      "observed": true,
+      "severity": 1.0,
+      "t": 242700.0
+    },
+    {
+      "anomaly_score": 0.34468763413821557,
+      "cause": null,
+      "event_id": "e000012",
+      "kind": "restored",
+      "node_id": "telecom.tower_01",
+      "observed": true,
+      "severity": 0.0,
+      "t": 247500.0
+    },
+    {
+      "anomaly_score": 0.3510935366612945,
+      "cause": null,
+      "event_id": "e000013",
+      "kind": "restored",
+      "node_id": "telecom.tower_03",
+      "observed": true,
+      "severity": 0.0,
+      "t": 247500.0
+    },
+    {
+      "anomaly_score": 0.3437492545911643,
+      "cause": null,
+      "event_id": "e000014",
+      "kind": "restored",
+      "node_id": "telecom.tower_02",
+      "observed": true,
+      "severity": 0.0,
+      "t": 248700.0
+    }
+  ],
+  "hazard": "equipment_age",
+  "horizon_s": 259200.0,
+  "scenario_id": "tiny_v1-equipment_age-A0-s11",
+  "seed": 11,
+  "tick_s": 300.0
+}

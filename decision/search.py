@@ -36,7 +36,8 @@ DEADLINE_RETENTION = 0.90
 
 
 class InterventionSearch:
-    def __init__(self, graph: CityGraph, kernel: Kernel, *, n_rollouts: int = 600):
+    def __init__(self, graph: CityGraph, kernel: Kernel, *, n_rollouts: int = 600,
+                 kinds: tuple[str, ...] | None = None, top_k: int = 24):
         self.graph = graph
         self.roll = CascadeRollout(graph, kernel)
         self.node_by_id = {n.id: n for n in graph.nodes}
@@ -45,6 +46,10 @@ class InterventionSearch:
             if e.relation == "depends_on":
                 self.n_dependents[e.dst] = self.n_dependents.get(e.dst, 0) + 1
         self.n_rollouts = n_rollouts
+        # Restrict the action space to what the evaluating environment can apply.
+        # None means the full space.
+        self.kinds = kinds
+        self.top_k = top_k
 
     def _reach_hint(self, seeds: list[str], s_vec: np.ndarray, seed: int) -> dict[str, float]:
         """Which nodes does the cascade actually threaten? Only propose there."""
@@ -71,7 +76,12 @@ class InterventionSearch:
             active = new
         freq = failed.mean(axis=0)
         weight = freq * (1.0 + self.roll.pop / max(self.roll.pop.max(), 1.0)) * self.roll.weight
-        return {self.roll.nodes[i].id: float(weight[i]) for i in np.argsort(-weight)[:40]
+        # Widened from 40. Once the assets that are already down are excluded,
+        # a narrow hint leaves the search with almost nothing to propose — on a
+        # mid-scenario decision it returned two candidates, both the same node,
+        # so the arm could not even spend its budget.
+        n_hint = max(80, self.top_k * 3)
+        return {self.roll.nodes[i].id: float(weight[i]) for i in np.argsort(-weight)[:n_hint]
                 if weight[i] > 0}
 
     def _deadline(self, action: Action, seeds, s_vec, benefit_now: float, seed: int) -> float:
@@ -105,20 +115,39 @@ class InterventionSearch:
         *,
         seed: int = 0,
         top_n: int = 5,
+        already_failed: set[str] | None = None,
+        keep_nonpositive: bool = False,
     ) -> Decision:
+        """Rank interventions and return the best, each with a deadline.
+
+        `already_failed` is what is ALREADY down at time `t`.
+
+        Two things depend on it: those assets are not proposed as targets, and
+        the rollout counts them as failed rather than re-failing them, which
+        otherwise inflates every candidate's estimated benefit.
+        """
         t0 = time.perf_counter()
-        base = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed)
+        down = set(already_failed or ())
+        af = (np.array([n.id in down for n in self.graph.nodes]) if down else None)
+        base = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed,
+                             already_failed=af)
         base_dmg = float(base.damage_samples.mean())
 
         hint = self._reach_hint(seeds, s_vec, seed)
-        cands = A.candidates(self.node_by_id, self.roll.idx, seeds, hint)
+        cands = A.candidates(self.node_by_id, self.roll.idx, seeds, hint,
+                             top_k=self.top_k, kinds=self.kinds, exclude=frozenset(down))
 
         scored: list[Intervention] = []
         for a in cands:
             Am = A.apply(self.roll.A, a, self.roll.idx)
-            r = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed, A=Am)
+            r = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed, A=Am,
+                              already_failed=af)
             prevented = base_dmg - float(r.damage_samples.mean())
-            if prevented <= 0:
+            if prevented <= 0 and not keep_nonpositive:
+                # The product declines to recommend an action it cannot show a
+                # benefit for. An ABLATION arm still has to spend its budget, or
+                # it is being compared at a different budget from every other
+                # arm, so the ablation asks for the full ranking.
                 continue
             saved = _damage_delta(base.damage, r.damage)
             scored.append(

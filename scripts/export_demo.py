@@ -115,10 +115,17 @@ def main() -> int:
         live = list(dict.fromkeys(
             [e.node_id for e in seen if e.kind == "failed"][-25:])) or [g.nodes[0].id]
 
-        srch = InterventionSearch(g, kernel, n_rollouts=400)
-        dec = srch.decide(base.scenario_id, t_dec, live, s_vec, [], seed=seed)
+        # Restricted to the actions the engine can apply, and forbidden from
+        # spending the budget on assets that are already down. See eval/arms.py.
+        down = {e.node_id for e in seen if e.kind == "failed"}
+        srch = InterventionSearch(g, kernel, n_rollouts=400,
+                                  kinds=("harden", "preposition"), top_k=60)
+        dec = srch.decide(base.scenario_id, t_dec, live, s_vec, [], seed=seed,
+                          top_n=BUDGET * 4, already_failed=down)
         ids = {n.id for n in g.nodes}
-        fb_targets = [iv.action.target for iv in dec.ranked if iv.action.target in ids][:BUDGET]
+        ranked = sorted(dec.ranked, key=lambda iv: -iv.damage_prevented_headline)
+        fb_targets = list(dict.fromkeys(
+            iv.action.target for iv in ranked if iv.action.target in ids))[:BUDGET]
         if not fb_targets:
             continue
 
@@ -153,7 +160,8 @@ def main() -> int:
             f"BEAT 5 NO LONGER FAILS: the human-obvious action ({sh['headline']:,.0f}) did not "
             f"do worse than Firebreak's ({sf['headline']:,.0f}). The demo's contrast is gone.")
 
-    top = best["dec"].ranked[0] if best["dec"].ranked else None
+    ranked_best = sorted(best["dec"].ranked, key=lambda iv: -iv.damage_prevented_headline)
+    top = ranked_best[0] if ranked_best else None
     nodes = [{"id": n.id, "l": n.layer, "k": n.kind, "lat": round(n.lat, 5), "lon": round(n.lon, 5),
               "pop": n.population_served, "w": n.criticality_weight,
               "buf": int(n.buffer_s)} for n in g.nodes]
@@ -179,7 +187,7 @@ def main() -> int:
         "intervention": {
             "targets": best["fb_targets"],
             "kind": top.action.kind if top else None,
-            "cost": sum(iv.action.cost for iv in best["dec"].ranked[:BUDGET]),
+            "cost": sum(iv.action.cost for iv in ranked_best[:BUDGET]),
             "deadline_s": top.deadline_s if top else 0.0,
             "rationale": top.rationale if top else [],
             "compute_ms": round(best["dec"].compute_ms, 1),

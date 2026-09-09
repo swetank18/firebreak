@@ -72,6 +72,7 @@ def _one(args) -> dict:
     s_vec = np.array([obs.susceptibility(n.id) for n in g.nodes])
     live = [e.node_id for e in seen if e.kind == "failed"][-25:]
     live = list(dict.fromkeys(live))
+    failed_by_t_dec = {e.node_id for e in seen if e.kind == "failed"}
 
     br = BranchingRatio(g, kernel)
     scores: dict[str, float] = {}
@@ -79,20 +80,43 @@ def _one(args) -> dict:
         scores[e.node_id] = max(scores.get(e.node_id, 0.0), e.anomaly_score)
 
     picks: dict[str, list[str]] = {}
+    # No arm may spend its budget on an asset that is already down — protecting a
+    # failed node is a no-op in the engine, and an arm that wastes picks on them
+    # is being scored on a bookkeeping artefact rather than on its ranking.
+    def _top(d: dict[str, float]) -> list[str]:
+        return [k for k, _ in sorted(d.items(), key=lambda kv: -kv[1])
+                if k not in failed_by_t_dec][:BUDGET]
+
     if "A1" in arms:
-        picks["A1"] = [k for k, _ in sorted(scores.items(), key=lambda kv: -kv[1])[:BUDGET]]
+        picks["A1"] = _top(scores)
     if "A2" in arms:
-        picks["A2"] = [k for k, _ in sorted(cent.items(), key=lambda kv: -kv[1])[:BUDGET]]
+        picks["A2"] = _top(cent)
     if "A3" in arms:
-        nb = {n.id: br.of(n.id, world) for n in g.nodes}
-        picks["A3"] = [k for k, _ in sorted(nb.items(), key=lambda kv: -kv[1])[:BUDGET]]
+        picks["A3"] = _top({n.id: br.of(n.id, world) for n in g.nodes})
     if "A4" in arms:
         from decision.search import InterventionSearch
-        srch = InterventionSearch(g, kernel, n_rollouts=400)
-        d = srch.decide(base.scenario_id, t_dec, live or [g.nodes[0].id], s_vec, [], seed=seed)
+        # EVERY ARM PROTECTS FIVE NODES. The arms may differ in HOW they choose,
+        # and in nothing else, or the comparison stops being about selection.
+        #
+        # So the search runs over the action the engine can actually apply —
+        # harden and preposition, both of which make a node resist. It used to
+        # run over the full space, rank by benefit-per-COST, and hand back four
+        # `isolate` actions on assets that had already failed; the evaluation
+        # then applied generic protection to those dead assets and A4 measured
+        # 0.1% against A2's 10.5%. See docs/FINDINGS.md.
+        #
+        # Ranked by raw damage prevented, not per unit cost, because the budget
+        # here is a COUNT of interventions. Cost-weighted ranking is a different
+        # mechanism and would not belong in this arm.
+        srch = InterventionSearch(g, kernel, n_rollouts=400,
+                                  kinds=("harden", "preposition"), top_k=60)
+        d = srch.decide(base.scenario_id, t_dec, live or [g.nodes[0].id], s_vec, [],
+                        seed=seed, top_n=BUDGET * 4, already_failed=set(failed_by_t_dec),
+                        keep_nonpositive=True)
         ids = {n.id for n in g.nodes}
-        picks["A4"] = [iv.action.target for iv in d.ranked
-                       if iv.action.target in ids][:BUDGET]
+        ranked = sorted(d.ranked, key=lambda iv: -iv.damage_prevented_headline)
+        picks["A4"] = list(dict.fromkeys(
+            iv.action.target for iv in ranked if iv.action.target in ids))[:BUDGET]
     d0 = _damage(base, g)
 
     if "A6" in arms:

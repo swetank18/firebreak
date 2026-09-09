@@ -2,12 +2,12 @@
   "n_scenarios": 36,
   "budget": 5,
   "protect": 0.9,
-  "kernel_edges": 2057,
+  "kernel_edges": 1094,
   "arms": [
     {
       "arm": "A0",
       "mechanism": "do nothing",
-      "damage": 26939249.2,
+      "damage": 9308690.3,
       "prevented": 0.0,
       "prevented_pct": 0.0,
       "hosp_hours_saved": 0.0,
@@ -16,46 +16,46 @@
     {
       "arm": "A1",
       "mechanism": "rank by anomaly score",
-      "damage": 26938651.5,
-      "prevented": 597.7,
-      "prevented_pct": 0.0,
-      "hosp_hours_saved": 0.11,
-      "oracle_captured_pct": 0.0
+      "damage": 9274536.3,
+      "prevented": 34154.1,
+      "prevented_pct": 0.37,
+      "hosp_hours_saved": 2.05,
+      "oracle_captured_pct": 1.5
     },
     {
       "arm": "A2",
       "mechanism": "+ static betweenness",
-      "damage": 25614258.5,
-      "prevented": 1324990.7,
-      "prevented_pct": 4.92,
-      "hosp_hours_saved": 4.0,
-      "oracle_captured_pct": 0.0
+      "damage": 8329791.5,
+      "prevented": 978898.8,
+      "prevented_pct": 10.52,
+      "hosp_hours_saved": 3.03,
+      "oracle_captured_pct": 9.5
     },
     {
       "arm": "A3",
       "mechanism": "+ branching ratio",
-      "damage": 26926760.4,
-      "prevented": 12488.7,
-      "prevented_pct": 0.05,
-      "hosp_hours_saved": 0.22,
-      "oracle_captured_pct": 13.0
+      "damage": 8388163.5,
+      "prevented": 920526.8,
+      "prevented_pct": 9.89,
+      "hosp_hours_saved": 3.43,
+      "oracle_captured_pct": 4.9
     },
     {
       "arm": "A4",
       "mechanism": "+ counterfactual search",
-      "damage": 26936887.0,
-      "prevented": 2362.1,
-      "prevented_pct": 0.01,
-      "hosp_hours_saved": 0.33,
-      "oracle_captured_pct": 0.0
+      "damage": 9295174.5,
+      "prevented": 13515.9,
+      "prevented_pct": 0.15,
+      "hosp_hours_saved": 3.47,
+      "oracle_captured_pct": 2.1
     },
     {
       "arm": "A6",
       "mechanism": "oracle (perfect foresight)",
-      "damage": 26937461.4,
-      "prevented": 1787.8,
-      "prevented_pct": 0.01,
-      "hosp_hours_saved": 0.22,
+      "damage": 6606297.2,
+      "prevented": 2702393.2,
+      "prevented_pct": 29.03,
+      "hosp_hours_saved": 11.09,
       "oracle_captured_pct": 100.0
     }
   ],

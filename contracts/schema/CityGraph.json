@@ -120,6 +120,12 @@
           "minimum": 0,
           "title": "Population Served",
           "type": "integer"
+        },
+        "protected_class": {
+          "default": false,
+          "description": "This asset's outage is counted and reported separately \u2014 hospitals here, but a city could mark shelters or schools. CONTRACT AMENDMENT 2026-09-09: added so the decision layer can weigh a critical facility WITHOUT naming a layer. `decision/` may not contain the literal 'health', and a string comparison against a layer couples the engine just as an import would. See docs/DECISIONS.md.",
+          "title": "Protected Class",
+          "type": "boolean"
         }
       },
       "required": [
