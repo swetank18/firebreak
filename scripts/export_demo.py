@@ -121,7 +121,8 @@ def main() -> int:
         srch = InterventionSearch(g, kernel, n_rollouts=400,
                                   kinds=("harden", "preposition"), top_k=60)
         dec = srch.decide(base.scenario_id, t_dec, live, s_vec, [], seed=seed,
-                          top_n=BUDGET * 4, already_failed=down)
+                          top_n=BUDGET * 4, already_failed=down,
+                          horizon_s=base.horizon_s - t_dec)
         ids = {n.id for n in g.nodes}
         ranked = sorted(dec.ranked, key=lambda iv: -iv.damage_prevented_headline)
         fb_targets = list(dict.fromkeys(

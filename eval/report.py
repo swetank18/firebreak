@@ -49,6 +49,12 @@ def prereg_diff(r: dict) -> str:
     by = {t["arm"]: t for t in arms["arms"]}
     a2, a4 = by.get("A2", {}), by.get("A4", {})
     h3_ok = a4.get("prevented", 0) > a2.get("prevented", 0)
+    # Whether an arm beats a RANDOM five-asset pick is the prior question, and
+    # for two arms the answer is no. Reported beside H3 because "prevented more
+    # than doing nothing" is not the bar — a random pick clears that too.
+    chance_line = ", ".join(
+        f"{a}: {'beats chance' if by.get(a, {}).get('beats_chance_95') else '**not distinguishable from chance**'}"
+        for a in ("A1", "A2", "A3", "A4"))
 
     # Counted, never asserted. A sentence like "two of the four went against us"
     # is exactly the kind of number that goes stale the next time the ablation
@@ -104,8 +110,14 @@ def prereg_diff(r: dict) -> str:
         "\"our estimator is better\" than \"most of what propagates failure was never in the",
         "matrix\". See `h2.md`.", "",
         "**H3** was pre-registered as *strictly* more damage prevented at every budget from 1",
-        f"to 10. We tested one budget ({arms['budget']}), so the pre-registered claim is only",
-        "partly tested and is reported that way rather than as a pass.", "",
+        f"to 10. We tested one budget ({arms['budget']}), so the claim is only partly tested.",
+        "But the prior question is sharper and we did not ask it until late: **does any arm",
+        "beat protecting five assets at random?** A random pick prevents damage too, with a",
+        "standard deviation around 176,000 on a single scenario. Against that baseline —",
+        f"{chance_line}.", "",
+        "That is the result this project did not expect and does not get to bury. Ranking",
+        "which alarm becomes a catastrophe works. Choosing *where to intervene* from that",
+        "ranking does not, and static betweenness — no learning at all — does.", "",
         "**H4 is the one we wrote down expecting to lose**, and it is reported whichever way it",
         f"lands: branching ratio {h4['auc_branching_ratio']:.3f} against static betweenness "
         f"{h4['auc_static_betweenness']:.3f}, "
@@ -185,10 +197,14 @@ def results_md(r: dict) -> str:
         "## 5. Does picking the firebreak beat picking the big node? (`eval/arms.py`)", "",
         f"- {arms['n_scenarios']} held-out scenarios · budget {arms['budget']} interventions · "
         "applied in the engine and re-run on the same seed with paired randomness", "",
-        "| arm | mechanism | damage | prevented | % | hosp-hrs saved | % of oracle |",
+        "**Read the `vs chance` column.** Protecting five assets at random already prevents",
+        "damage; the only honest question is whether an arm beats that.", "",
+        "| arm | mechanism | prevented | 95% CI | vs chance | beats chance | % of oracle |",
         "|---|---|---|---|---|---|---|",
-        *[f"| {t['arm']} | {t['mechanism']} | {t['damage']:,.0f} | {t['prevented']:,.0f} | "
-          f"{t['prevented_pct']:.1f}% | {t['hosp_hours_saved']:.1f} | "
+        *[f"| {t['arm']} | {t['mechanism']} | {t['prevented']:,.0f} | "
+          f"[{t['prevented_ci'][0]:,.0f}, {t['prevented_ci'][1]:,.0f}] | "
+          f"{t['vs_chance']:,.0f} | "
+          f"{'—' if t['arm'] in ('A0', 'AR') else ('**yes**' if t['beats_chance_95'] else 'no')} | "
           f"{t['oracle_captured_pct']:.0f}% |" for t in arms["arms"]],
         "",
         f"{arms['A5_note']}", "",

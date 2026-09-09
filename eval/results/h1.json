@@ -37,5 +37,7 @@
     "delta": 0.0696,
     "as_predicted": false
   },
-  "H1_PASSED": true
+  "H1_PASSED": false,
+  "H1_prereg_anomaly_in_range": true,
+  "H1_prereg_ours_ge_080": false
 }

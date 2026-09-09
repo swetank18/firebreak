@@ -115,7 +115,7 @@ def _one(args) -> dict:
                                   kinds=("harden", "preposition"), top_k=60)
         d = srch.decide(base.scenario_id, t_dec, live or [g.nodes[0].id], s_vec, [],
                         seed=seed, top_n=BUDGET * 4, already_failed=set(failed_by_t_dec),
-                        keep_nonpositive=True)
+                        keep_nonpositive=True, horizon_s=base.horizon_s - t_dec)
         ids = {n.id for n in g.nodes}
         ranked = sorted(d.ranked, key=lambda iv: -iv.damage_prevented_headline)
         picks["A4"] = list(dict.fromkeys(

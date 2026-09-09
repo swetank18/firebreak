@@ -32,6 +32,15 @@ from inference.relations import propagation_targets
 
 MAX_GENERATIONS = 12
 
+# A rollout generation is one propagation hop. To predict how much MORE fails
+# over a remaining horizon, the rollout also has to advance time, and the two
+# are not the same thing: median propagation delay here is ~900 s against a
+# 54-hour remaining horizon, so a 12-hop rollout covers about 3 hours of a
+# 3-day event. Blocks let a bounded number of generations span the horizon —
+# an approximation, since multi-hop propagation inside one block is compressed,
+# and it is stated as one in docs/LIMITATIONS.md.
+MAX_BLOCKS = 40
+
 
 @dataclass
 class RolloutResult:
@@ -55,6 +64,17 @@ class CascadeRollout:
         self.n = len(self.nodes)
 
         self.pop = np.array([n.population_served for n in self.nodes], dtype=float)
+        # THE BACKGROUND TERM OF THE HAWKES MODEL WE CITE.
+        #
+        #   lambda_j(t) = mu_j + sum_i sum_k alpha_ij beta_ij exp(-beta_ij (t - t_k))
+        #
+        # The rollout implemented only the excitation half, so nothing could
+        # fail unless an already-failed parent pushed it. Over the rest of a
+        # monsoon most further failures come from the hazard still running, not
+        # from branching off what has already failed — and the consequence was
+        # measurable: the rollout predicted 3 further assets where the engine
+        # produced 265. See docs/FINDINGS.md.
+        self.mu = np.array([kernel.mu.get(n.id, 0.0) for n in self.nodes], dtype=float)
         self.weight = np.array([n.criticality_weight for n in self.nodes], dtype=float)
         # NOT `n.layer == ...`: the invariant is that no executable line here
         # names a layer. The city declares the protected class in the contract.
@@ -95,6 +115,7 @@ class CascadeRollout:
         A: csr_matrix | None = None,
         already_failed: np.ndarray | None = None,
         apply_at_generation: int = 0,
+        horizon_s: float | None = None,
     ) -> RolloutResult:
         """Roll the cascade forward from `seeds` under the current state.
 
@@ -110,6 +131,18 @@ class CascadeRollout:
         if not seed_ix:
             return self._empty(R)
 
+        # How long one generation represents, and how many to run. With no
+        # horizon the rollout answers "what does this cascade do next"; with one
+        # it answers "how much more fails before the clock stops", which is the
+        # question an operator and the damage function both ask.
+        dt_gen = float(np.median(self.mean_delay_in)) or 900.0
+        if horizon_s and horizon_s > 0:
+            n_gen = int(min(MAX_BLOCKS, max(1, round(horizon_s / dt_gen))))
+            dt_block = horizon_s / n_gen
+        else:
+            n_gen, dt_block = MAX_GENERATIONS, dt_gen
+        bg = self.mu * dt_block  # expected background arrivals per node per block
+
         A_before = self.A
         A_after = self.A if A is None else A
 
@@ -124,14 +157,16 @@ class CascadeRollout:
         t_prot = np.full(R, np.nan)
         elapsed = 0.0
 
-        for gen in range(MAX_GENERATIONS):
-            if not active.any():
+        for gen in range(n_gen):
+            if not active.any() and not bg.any():
                 break
             # unmodified until the action lands, modified after
             Am = A_before if gen < apply_at_generation else A_after
-            # intensity into every node from everything that just failed
+            # intensity into every node from everything that just failed,
+            # PLUS the background the hazard keeps supplying
             lam = active.astype(np.float32) @ Am
-            lam = np.asarray(lam) * s_vec[None, :]
+            lam = np.asarray(lam) + bg[None, :]
+            lam = lam * s_vec[None, :]
             p = 1.0 - np.exp(-lam)
             p[failed] = 0.0
             new = rng.random((R, self.n)) < p
@@ -149,7 +184,7 @@ class CascadeRollout:
 
         reach = failed.sum(axis=1).astype(float)
         # damage: people-hours, weighted, plus hospital-critical hours
-        hours = 4.0  # mean outage hours per failed asset in the horizon
+        hours = (horizon_s / 7200.0) if horizon_s else 4.0  # mean outage hours per asset
         ph = (failed * self.pop[None, :]).sum(axis=1) * hours
         hosp_h = (failed & self.is_protected[None, :]).sum(axis=1) * hours
         weighted = (failed * (self.pop * self.weight)[None, :]).sum(axis=1) * hours

@@ -104,7 +104,10 @@ def _predict(args) -> tuple[float, float, float]:
     preds = []
     for k in (learned, declared):
         roll = CascadeRollout(g, k)
-        r = roll.run(seeds, s_vec, n_rollouts=N_ROLLOUTS, seed=0, already_failed=already)
+        # The question is "how many MORE fail before the clock stops", so the
+        # rollout is given the remaining horizon rather than a fixed hop count.
+        r = roll.run(seeds, s_vec, n_rollouts=N_ROLLOUTS, seed=0, already_failed=already,
+                     horizon_s=scen.horizon_s - t_obs)
         preds.append(max(0.0, r.expected_reach - len(before)))
     return actual, preds[0], preds[1]
 

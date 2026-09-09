@@ -54,9 +54,10 @@ class InterventionSearch:
         self.kinds = kinds
         self.top_k = top_k
 
-    def _reach_hint(self, seeds: list[str], s_vec: np.ndarray, seed: int) -> dict[str, float]:
+    def _reach_hint(self, seeds: list[str], s_vec: np.ndarray, seed: int,
+                    horizon_s: float | None = None) -> dict[str, float]:
         """Which nodes does the cascade actually threaten? Only propose there."""
-        base = self.roll.run(seeds, s_vec, n_rollouts=200, seed=seed)
+        base = self.roll.run(seeds, s_vec, n_rollouts=200, seed=seed, horizon_s=horizon_s)
         # one extra pass recording per-node hit frequency
         rng = np.random.default_rng(seed + 1)
         R, n = 200, self.roll.n
@@ -87,19 +88,20 @@ class InterventionSearch:
         return {self.roll.nodes[i].id: float(weight[i]) for i in np.argsort(-weight)[:n_hint]
                 if weight[i] > 0}
 
-    def _deadline(self, action: Action, seeds, s_vec, benefit_now: float, seed: int) -> float:
+    def _deadline(self, action: Action, seeds, s_vec, benefit_now: float, seed: int,
+                  horizon_s: float | None = None) -> float:
         """Latest delay at which the action still retains 90% of its benefit."""
         if benefit_now <= 0:
             return 0.0
         Am = A.apply(self.roll.A, action, self.roll.idx)
-        base = self.roll.run(seeds, s_vec, n_rollouts=400, seed=seed)
+        base = self.roll.run(seeds, s_vec, n_rollouts=400, seed=seed, horizon_s=horizon_s)
         base_mean = float(base.damage_samples.mean())
         # Benefit decays monotonically as the action lands later, so walk out
         # until it drops below the retention floor.
         best = 0
         for k in range(1, 7):
             r = self.roll.run(seeds, s_vec, n_rollouts=400, seed=seed,
-                              A=Am, apply_at_generation=k)
+                              A=Am, apply_at_generation=k, horizon_s=horizon_s)
             b = base_mean - float(r.damage_samples.mean())
             if b >= DEADLINE_RETENTION * benefit_now:
                 best = k
@@ -120,8 +122,16 @@ class InterventionSearch:
         top_n: int = 5,
         already_failed: set[str] | None = None,
         keep_nonpositive: bool = False,
+        horizon_s: float | None = None,
     ) -> Decision:
         """Rank interventions and return the best, each with a deadline.
+
+        `horizon_s` is the time still to run. Without it the rollout answers
+        "what does this cascade do next"; with it, "how much more fails before
+        the clock stops" — which is the question the damage function asks, and
+        the one an operator asks. It also switches on the Hawkes background
+        term, without which nothing can fail unless an already-failed parent
+        pushes it. See decision/rollout.py.
 
         `already_failed` is what is ALREADY down at time `t`.
 
@@ -133,10 +143,10 @@ class InterventionSearch:
         down = set(already_failed or ())
         af = (np.array([n.id in down for n in self.graph.nodes]) if down else None)
         base = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed,
-                             already_failed=af)
+                             already_failed=af, horizon_s=horizon_s)
         base_dmg = float(base.damage_samples.mean())
 
-        hint = self._reach_hint(seeds, s_vec, seed)
+        hint = self._reach_hint(seeds, s_vec, seed, horizon_s)
         cands = A.candidates(self.node_by_id, self.roll.idx, seeds, hint,
                              top_k=self.top_k, kinds=self.kinds, exclude=frozenset(down))
 
@@ -144,7 +154,7 @@ class InterventionSearch:
         for a in cands:
             Am = A.apply(self.roll.A, a, self.roll.idx)
             r = self.roll.run(seeds, s_vec, n_rollouts=self.n_rollouts, seed=seed, A=Am,
-                              already_failed=af)
+                              already_failed=af, horizon_s=horizon_s)
             prevented = base_dmg - float(r.damage_samples.mean())
             if prevented <= 0 and not keep_nonpositive:
                 # The product declines to recommend an action it cannot show a
@@ -171,7 +181,7 @@ class InterventionSearch:
         top = scored[:top_n]
         for iv in top:
             iv.deadline_s = self._deadline(iv.action, seeds, s_vec,
-                                           iv.damage_prevented_headline, seed)
+                                           iv.damage_prevented_headline, seed, horizon_s)
 
         decision_id = f"d-{uuid.uuid4().hex[:8]}"
         log.info("decision.ranked", extra={

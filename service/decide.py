@@ -90,7 +90,8 @@ def main(argv: list[str] | None = None) -> int:
     srch = InterventionSearch(g, kernel, n_rollouts=a.rollouts,
                               kinds=("harden", "preposition"), top_k=60)
     d = srch.decide(scen.scenario_id, t_dec, live, s_vec, [], seed=a.seed,
-                    top_n=a.budget, already_failed=down)
+                    top_n=a.budget, already_failed=down,
+                    horizon_s=scen.horizon_s - t_dec)
     decide_ms = (time.perf_counter() - t1) * 1000.0
 
     out = {
