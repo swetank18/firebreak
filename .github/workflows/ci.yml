@@ -38,13 +38,23 @@ jobs:
       - name: The six demo beats
         run: pytest service/tests/test_demo_beats.py -q
 
-      - name: Site builds from generated numbers only
+      # Both pages must be reproducible from eval/results/ and the exported
+      # scenario. The pitch page's footer carries a build sha and date, which
+      # necessarily differ between the commit that built the file and the commit
+      # that checks it — that one line is normalised away, and everything else
+      # has to match or www/ is stale.
+      - name: Pages are built from generated numbers only
         run: |
           python scripts/build_site.py
-          git diff --exit-code --stat -- www/ || {
-            echo "::error::www/index.html is stale — rebuild it with scripts/build_site.py and commit"
-            exit 1
-          }
+          norm() { sed -E 's#<span class="mono">build [^<]*</span>##g' "$1"; }
+          for f in www/index.html www/sim/index.html; do
+            git show "HEAD:$f" > /tmp/committed.html
+            if ! diff -q <(norm /tmp/committed.html) <(norm "$f") > /dev/null; then
+              echo "::error::$f is stale — run scripts/build_site.py and commit the result"
+              exit 1
+            fi
+          done
+          echo "www/index.html and www/sim/index.html both match their inputs"
 
       - name: Disk budget
         run: bash scripts/disk_check.sh

@@ -101,14 +101,6 @@ canvas{display:block;width:100%;height:auto}
 .legend{display:flex;gap:18px;flex-wrap:wrap;padding:11px 16px;border-top:1px solid var(--rule);
   font-size:12px;color:var(--ink-2)}
 .legend i{display:inline-block;width:9px;height:9px;margin-right:6px;border-radius:50%;vertical-align:middle}
-.beats{display:flex;gap:0;flex-wrap:wrap;border:1px solid var(--rule)}
-.beats button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;
-  padding:5px 9px;border:0;border-right:1px solid var(--rule);background:transparent;
-  color:var(--ink-2);cursor:pointer;text-transform:uppercase}
-.beats button:last-child{border-right:0}
-.beats button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
-.beats button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.beats b{font-weight:600;margin-right:5px}
 .outcome{border-top:1px solid var(--rule);padding:0}
 .outcome table{margin:0;font-size:13px}
 .outcome th,.outcome td{padding:9px 16px}
@@ -241,19 +233,10 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
   <div class="mapwrap">
     <div class="maphead">
       <span class="t" id="runLabel">chennai_v1 · monsoon_flood</span>
-      <span class="beats" role="group" aria-label="Demo beats">
-        <button data-beat="1" aria-pressed="true"><b>1</b>City</button>
-        <button data-beat="2" aria-pressed="false"><b>2</b>Two alarms</button>
-        <button data-beat="3" aria-pressed="false"><b>3</b>Do nothing</button>
-        <button data-beat="4" aria-pressed="false"><b>4</b>Firebreak</button>
-        <button data-beat="5" aria-pressed="false"><b>5</b>Human instinct</button>
-        <button data-beat="6" aria-pressed="false"><b>6</b>Evidence</button>
-      </span>
-      <button class="ctl" id="play">▶ Play</button>
-      <button class="ctl ghost" id="reset">Reset</button>
-      <span class="clock" id="clock">T+00:00</span>
+      <a class="ctl" id="openSim" href="sim/" style="text-decoration:none">Open the console</a>
+      <span class="clock" id="clock">72:00</span>
     </div>
-    <canvas id="map" width="1024" height="500" aria-label="Cascade map of Chennai across five infrastructure layers"></canvas>
+    <canvas id="map" width="1024" height="500" aria-label="Chennai at the end of the monsoon scenario, with failed assets ringed across five infrastructure layers"></canvas>
     <div class="counters">
       <div><div class="k">Assets failed</div><div class="v" id="cFail">0</div></div>
       <div><div class="k">Hospitals hit</div><div class="v" id="cHosp" style="color:var(--alarm)">0</div></div>
@@ -275,7 +258,9 @@ footer{padding:30px 0;color:var(--ink-3);font-size:12.5px;display:flex;gap:20px;
         <tbody id="outcomeRows">__DEMO_ROWS__</tbody>
       </table>
     </div>
-    <div class="hint">Press <kbd>1</kbd>–<kbd>6</kbd> to drive the six beats, <kbd>space</kbd> to play or pause. Nothing is typed and nothing is computed here — every mark and every number is a field in the exported scenario.</div>
+    <div class="hint">This is the final frame. <a href="sim/"><b>Open the console</b></a> to scrub the
+    clock, rewind, and switch between the three runs — keys <kbd>1</kbd>–<kbd>6</kbd> drive the
+    whole demo and nothing is typed.</div>
   </div>
 
   <p class="note" style="margin-top:20px">__DEMO_CAPTION__</p>
@@ -365,179 +350,85 @@ __EVIDENCE_ROWS__
 
 <script>
 const DATA = __DATA__;
-(function(){
+(function () {
+  // A STILL FRAME. The interactive replay is a separate page at sim/ — one
+  // renderer with controls, rather than two that drift apart.
   const cv = document.getElementById('map'), ctx = cv.getContext('2d');
   const css = getComputedStyle(document.documentElement);
-  const col = k => css.getPropertyValue('--'+k).trim();
-  const $ = id => document.getElementById(id);
+  const col = k => css.getPropertyValue('--' + k).trim();
+  const nodes = DATA.nodes, idx = {};
+  nodes.forEach(n => idx[n.id] = n);
+  const tl = (DATA.runs && DATA.runs.do_nothing ? DATA.runs.do_nothing.timeline : DATA.timeline) || [];
 
-  const nodes = DATA.nodes;
-  // Three precomputed runs of the same seed. The renderer picks one and
-  // replays it; it never simulates anything.
-  const RUNS = DATA.runs || {do_nothing:{timeline:DATA.timeline,summary:{}}};
-  const ORDER = ['do_nothing','firebreak','human'];
-  const LABEL = {do_nothing:'do nothing', firebreak:"Firebreak's action", human:'harden the hospital'};
-  let runKey = 'do_nothing';
-  let tl = RUNS[runKey].timeline;
-
-  const lat = nodes.map(n=>n.lat), lon = nodes.map(n=>n.lon);
-  const la0=Math.min(...lat), la1=Math.max(...lat), lo0=Math.min(...lon), lo1=Math.max(...lon);
-  const pad=26;
-  function resize(){
-    const w = cv.clientWidth || 1024;
-    const dpr = Math.min(window.devicePixelRatio||1, 2);
-    cv.width = w*dpr; cv.height = 500*dpr;
-    cv.style.height = '500px';
-    ctx.setTransform(dpr,0,0,dpr,0,0);
-    return w;
+  const lat = nodes.map(n => n.lat), lon = nodes.map(n => n.lon);
+  const la0 = Math.min(...lat), la1 = Math.max(...lat);
+  const lo0 = Math.min(...lon), lo1 = Math.max(...lon);
+  const pad = 26;
+  let W = 1024;
+  function resize() {
+    const w = cv.clientWidth || 1024, dpr = Math.min(devicePixelRatio || 1, 2);
+    cv.width = w * dpr; cv.height = 500 * dpr; cv.style.height = '500px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return w;
   }
-  let W = resize();
-  const X = n => pad + ((n.lon-lo0)/(lo1-lo0))*(W-2*pad);
-  const Y = n => 500-pad - ((n.lat-la0)/(la1-la0))*(500-2*pad);
+  const X = n => pad + ((n.lon - lo0) / (lo1 - lo0)) * (W - 2 * pad);
+  const Y = n => 500 - pad - ((n.lat - la0) / (la1 - la0)) * (500 - 2 * pad);
 
-  const idx = {}; nodes.forEach(n=>idx[n.id]=n);
   const state = {};
-  const protectedSet = new Set((DATA.intervention&&DATA.intervention.targets)||[]);
-  const humanSet = new Set((DATA.human_action&&DATA.human_action.targets)||[]);
+  tl.forEach(e => { if (idx[e.n]) state[e.n] = e; });
 
-  const T_END = DATA.horizon_s;
-  const T_DEC = DATA.t_decide_s || 0;
-  let clock = 0, playing = false, raf = null, cursor = 0;
-
-  function marks(){ return runKey==='firebreak' ? protectedSet : runKey==='human' ? humanSet : null; }
-
-  function draw(){
-    ctx.clearRect(0,0,W,500);
-    ctx.lineWidth = 0.6; ctx.strokeStyle = col('rule'); ctx.globalAlpha = 0.5;
-    DATA.deps.forEach(e=>{
-      const a=idx[e.s], b=idx[e.d]; if(!a||!b) return;
-      ctx.beginPath(); ctx.moveTo(X(a),Y(a)); ctx.lineTo(X(b),Y(b)); ctx.stroke();
+  function draw() {
+    ctx.clearRect(0, 0, W, 500);
+    ctx.lineWidth = .6; ctx.strokeStyle = col('rule'); ctx.globalAlpha = .5;
+    DATA.deps.forEach(e => {
+      const a = idx[e.s], b = idx[e.d]; if (!a || !b) return;
+      ctx.beginPath(); ctx.moveTo(X(a), Y(a)); ctx.lineTo(X(b), Y(b)); ctx.stroke();
     });
     ctx.globalAlpha = 1;
-    const acted = marks(), shown = acted && clock >= T_DEC;
-    nodes.forEach(n=>{
-      const st = state[n.id];
-      const base = n.l==='health' ? 3.0 : n.l==='transport' ? 1.15 : 2.0;
-      const x=X(n), y=Y(n);
-      ctx.beginPath(); ctx.arc(x,y, base, 0, 6.2832);
+    nodes.forEach(n => {
+      const st = state[n.id], base = n.l === 'health' ? 3 : n.l === 'transport' ? 1.15 : 2;
+      const x = X(n), y = Y(n);
+      ctx.beginPath(); ctx.arc(x, y, base, 0, 6.2832);
       ctx.fillStyle = col(n.l);
-      ctx.globalAlpha = st ? 1 : (n.l==='transport' ? 0.28 : 0.5);
+      ctx.globalAlpha = st ? 1 : (n.l === 'transport' ? .28 : .5);
       ctx.fill(); ctx.globalAlpha = 1;
-      if(st){
-        const r = base + 2.2 + Math.min(st.br,5)*1.7;
-        ctx.beginPath(); ctx.arc(x,y,r,0,6.2832);
-        ctx.strokeStyle = st.br > 1 ? col('alarm') : col('ink-3');
-        ctx.lineWidth = st.br > 1 ? 1.5 : 0.9;
-        ctx.globalAlpha = 0.9; ctx.stroke(); ctx.globalAlpha = 1;
-        if(n.l==='health'){
-          ctx.beginPath(); ctx.arc(x,y,base+7,0,6.2832);
-          ctx.strokeStyle=col('alarm'); ctx.lineWidth=1.2; ctx.globalAlpha=.55; ctx.stroke();
-          ctx.globalAlpha=1;
-        }
-      }
-      if(shown && acted.has(n.id)){          // where the action was taken
-        ctx.beginPath(); ctx.arc(x,y,base+9,0,6.2832);
-        ctx.strokeStyle=col('safe'); ctx.lineWidth=2; ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x-base-13,y); ctx.lineTo(x-base-9,y);
-        ctx.moveTo(x+base+9,y); ctx.lineTo(x+base+13,y); ctx.stroke();
+      if (!st) return;
+      ctx.beginPath(); ctx.arc(x, y, base + 2.2 + Math.min(st.br, 5) * 1.7, 0, 6.2832);
+      ctx.strokeStyle = st.br > 1 ? col('alarm') : col('ink-3');
+      ctx.lineWidth = st.br > 1 ? 1.5 : .9;
+      ctx.globalAlpha = .9; ctx.stroke(); ctx.globalAlpha = 1;
+      if (n.l === 'health') {
+        ctx.beginPath(); ctx.arc(x, y, base + 7, 0, 6.2832);
+        ctx.strokeStyle = col('alarm'); ctx.lineWidth = 1.2;
+        ctx.globalAlpha = .55; ctx.stroke(); ctx.globalAlpha = 1;
       }
     });
   }
 
-  function stamp(){
-    const h = Math.floor(clock/3600), m = Math.floor((clock%3600)/60);
-    $('clock').textContent = 'T+'+String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
-    let f=0,hosp=0,people=0,dang=0;
-    for(const k in state){ const n=idx[k]; if(!n) continue; f++;
-      if(n.k==='hospital') hosp++;
-      people += n.pop||0;
-      if(state[k].br>1) dang++;
-    }
-    $('cFail').textContent=f.toLocaleString();
-    $('cHosp').textContent=hosp;
-    $('cPeople').textContent=people.toLocaleString();
-    $('cDanger').textContent=dang;
-    // person-hours is a run total, not a running sum the renderer could invent
-    const sm = RUNS[runKey].summary||{};
-    const frac = T_END ? Math.min(clock/T_END,1) : 0;
-    $('cHours').textContent = Math.round((sm.person_hours||0)*frac).toLocaleString();
-    document.querySelectorAll('#outcomeRows tr').forEach(tr=>{
-      tr.classList.toggle('on', tr.dataset.run===runKey);
-    });
-    $('runLabel').textContent = 'chennai_v1 · monsoon_flood · seed '+(DATA.seed||'')+' · '+LABEL[runKey];
+  // Counters are the settled totals from the run, not a running interpolation.
+  // The renderer computes nothing: every figure here is a field in the export.
+  const sm = (DATA.runs && DATA.runs.do_nothing) ? DATA.runs.do_nothing.summary : null;
+  let dang = 0;
+  for (const k in state) if (state[k].br > 1) dang++;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  if (sm) {
+    set('cFail', sm.assets_failed.toLocaleString());
+    set('cHosp', sm.hospitals_hit);
+    set('cPeople', sm.people.toLocaleString());
+    set('cHours', Math.round(sm.person_hours).toLocaleString());
+  }
+  set('cDanger', dang);
+  const rl = document.getElementById('runLabel');
+  if (rl) rl.textContent = `${DATA.city} · monsoon_flood · seed ${DATA.seed} · do nothing`;
+  document.querySelectorAll('#outcomeRows tr').forEach(tr =>
+    tr.classList.toggle('on', tr.dataset.run === 'do_nothing'));
+
+  if (DATA.pair) {
+    const p = DATA.pair, s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    s('dangerId', p.danger.id); s('dangerScore', p.danger.score.toFixed(3)); s('dangerBr', p.danger.br.toFixed(2));
+    s('decoyId', p.decoy.id); s('decoyScore', p.decoy.score.toFixed(3)); s('decoyBr', p.decoy.br.toFixed(2));
   }
 
-  function advance(to){
-    while(cursor < tl.length && tl[cursor].t <= to){
-      const e = tl[cursor];
-      if(idx[e.n]) state[e.n] = {br:e.br, h:e.h};
-      cursor++;
-    }
-  }
-  function rewind(){
-    playing=false; if(raf) cancelAnimationFrame(raf);
-    $('play').textContent='▶ Play';
-    for(const k in state) delete state[k];
-    cursor=0; clock=0;
-  }
-  function selectRun(key){
-    runKey = RUNS[key] ? key : 'do_nothing';
-    tl = RUNS[runKey].timeline;
-    rewind(); draw(); stamp();
-  }
-  function play(){
-    if(clock>=T_END) { rewind(); }
-    playing = true; $('play').textContent='❚❚ Pause';
-    raf = requestAnimationFrame(tick);
-  }
-  function tick(){
-    if(!playing) return;
-    clock += T_END/420;
-    if(clock >= T_END){ clock = T_END; advance(clock); draw(); stamp();
-      playing=false; $('play').textContent='↻ Replay'; return; }
-    advance(clock); draw(); stamp();
-    raf = requestAnimationFrame(tick);
-  }
-
-  // ---- the six beats. Nothing is typed on stage. ----
-  function setBeat(n){
-    document.querySelectorAll('.beats button').forEach(b=>{
-      b.setAttribute('aria-pressed', String(b.dataset.beat===String(n)));
-    });
-    if(n===1){ selectRun('do_nothing'); }
-    else if(n===2){ selectRun('do_nothing'); advance(T_DEC); clock=T_DEC; draw(); stamp();
-      document.querySelector('.alarms').scrollIntoView({behavior:'smooth',block:'center'}); }
-    else if(n===3){ selectRun('do_nothing'); play(); }
-    else if(n===4){ selectRun('firebreak'); play(); }
-    else if(n===5){ selectRun('human'); play(); }
-    else if(n===6){ document.getElementById('evidence').scrollIntoView({behavior:'smooth',block:'start'}); }
-    if(n>=1&&n<=5) cv.scrollIntoView({behavior:'smooth',block:'center'});
-  }
-  document.querySelectorAll('.beats button').forEach(b=>{
-    b.addEventListener('click',()=>setBeat(Number(b.dataset.beat)));
-  });
-  document.addEventListener('keydown',ev=>{
-    const t=ev.target;
-    if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA'||t.isContentEditable)) return;
-    if(ev.key>='1'&&ev.key<='6'){ ev.preventDefault(); setBeat(Number(ev.key)); }
-    else if(ev.key===' '){ ev.preventDefault(); playing ? (playing=false,$('play').textContent='▶ Play') : play(); }
-  });
-
-  $('play').addEventListener('click',()=>{
-    if(playing){ playing=false; $('play').textContent='▶ Play'; } else play();
-  });
-  $('reset').addEventListener('click',()=>{ rewind(); draw(); stamp(); });
-  window.addEventListener('resize',()=>{ W=resize(); draw(); });
-
-  if(DATA.pair){
-    $('dangerId').textContent = DATA.pair.danger.id;
-    $('dangerScore').textContent = DATA.pair.danger.score.toFixed(3);
-    $('dangerBr').textContent = DATA.pair.danger.br.toFixed(2);
-    $('decoyId').textContent = DATA.pair.decoy.id;
-    $('decoyScore').textContent = DATA.pair.decoy.score.toFixed(3);
-    $('decoyBr').textContent = DATA.pair.decoy.br.toFixed(2);
-  }
-  draw(); stamp();
-  advance(T_END*0.18); clock = T_END*0.18; draw(); stamp();
+  W = resize(); draw();
+  addEventListener('resize', () => { W = resize(); draw(); });
 })();
 </script>

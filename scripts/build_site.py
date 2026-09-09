@@ -7,14 +7,20 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import subprocess
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TPL = ROOT / "scripts" / "pitch_template.html"
+CONSOLE_TPL = ROOT / "scripts" / "console_template.html"
 DATA = ROOT / "console" / "data" / "demo.json"
 RESULTS = ROOT / "eval" / "results"
 OUT = ROOT / "www" / "index.html"
+# The simulation lives at its own URL. It is an instrument, not a section of a
+# write-up: full viewport, nothing scrolls, driven from the keyboard. Keeping it
+# inside the pitch page meant the page had to be scrolled to during a demo.
+CONSOLE_OUT = ROOT / "www" / "sim" / "index.html"
 
 
 def _res(name: str) -> dict:
@@ -163,6 +169,17 @@ def _demo(d: dict) -> tuple[str, str]:
             f"it does.</b> The decision took {iv.get('compute_ms', 0):,.0f} ms.")
     return "\n".join(rows), caption
 
+CONSOLE_HEAD = """<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Firebreak simulation console — replay a five-layer city cascade, rewind it, and compare what three different interventions do to the same seed.">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="index,follow">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22><text y=%22.9em%22 font-size=%2258%22>&#128293;</text></svg>">
+"""
+
 HEAD = """<!doctype html>
 <html lang="en">
 <head>
@@ -202,11 +219,9 @@ def main() -> None:
         ("__DEMO_CAPTION__", demo_caption),
     ):
         body = body.replace(key, val)
-    if "__" in body.replace("__DATA__", ""):
-        import re as _re
-        left = set(_re.findall(r"__[A-Z_]+__", body))
-        if left:
-            raise SystemExit(f"unfilled placeholders in the template: {sorted(left)}")
+    left = set(re.findall(r"__[A-Z_]+__", body))
+    if left:
+        raise SystemExit(f"unfilled placeholders in the template: {sorted(left)}")
 
     try:
         sha = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"],
@@ -220,6 +235,17 @@ def main() -> None:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(HEAD + "</head>\n<body>\n" + body + "\n</body>\n</html>\n")
     print(f"wrote {OUT.relative_to(ROOT)}  ({OUT.stat().st_size:,} bytes)")
+
+    # ---- the simulation console, same data, its own URL ----
+    console = CONSOLE_TPL.read_text().replace(
+        "__DATA__", json.dumps(d, separators=(",", ":")))
+    left = set(re.findall(r"__[A-Z_]+__", console))
+    if left:
+        raise SystemExit(f"unfilled placeholders in the console template: {sorted(left)}")
+    CONSOLE_OUT.parent.mkdir(parents=True, exist_ok=True)
+    CONSOLE_OUT.write_text(
+        CONSOLE_HEAD + "</head>\n<body>\n" + console + "\n</body>\n</html>\n")
+    print(f"wrote {CONSOLE_OUT.relative_to(ROOT)}  ({CONSOLE_OUT.stat().st_size:,} bytes)")
 
 
 if __name__ == "__main__":
