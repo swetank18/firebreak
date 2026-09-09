@@ -84,4 +84,30 @@ Run 1,000 seeded scenarios. Extract every cascade. Plot the complementary CDF of
 - Everything collapses ⇒ `ρ(G) ≥ 1` globally. Every scenario is a catastrophe and there is no discrimination to measure.
 - Bimodal, nothing between ⇒ the model has a threshold, not a process. This is the subtle one and it will silently invalidate the AUC result.
 
+---
+
+### What actually happened — this section is superseded, and kept
+
+**The power-law criterion above failed, and it is still run and still reported as
+failing** in `eval/results/realism.md`. A Vuong likelihood-ratio test favours an
+exponential tail decisively at every `x_min`. The literature's power-law result
+(Dobson/Carreras, restated in PI-GN-JODE) is established for *transmission-grid
+blackouts*; this is a multi-sector urban lifeline network, where it is not.
+Asserting it here would have been an unexamined transfer between domains. See
+`docs/FINDINGS.md`.
+
+**The gate now tests what the project actually needs of the simulator:** cascade
+sizes spanning orders of magnitude, a tail far heavier than thin-tailed, neither
+all-tiny nor all-collapse, not bimodal — and one check that was missing entirely
+and cost an entire ablation:
+
+**Scenario contingency.** Every fail mode listed above is about the *cascade size
+distribution*. None of them asks what fraction of the CITY ends up down in a
+given scenario, and those are different questions. The size distribution passed
+cleanly the whole time 92% of assets were failing in every run, with a
+seed-to-seed spread of 0.90–0.94 — so no five-node intervention could move any
+outcome and the seven-arm ablation was measuring nothing at all. **Prediction
+only matters where the outcome is contingent**, and the gate now checks that for
+every hazard.
+
 Owner: Lane A. Output: `eval/results/realism.md`, generated. **No lane proceeds past hour 8 until this is green**, because every number produced before it is provisional.
