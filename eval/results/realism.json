@@ -1,0 +1,31 @@
+{
+  "n_scenarios": 1000,
+  "n_cascades": 150472,
+  "alpha": 3.088,
+  "x_min": 44.0,
+  "ks": 0.0887,
+  "ks_critical_95": 0.0106,
+  "n_tail": 16431,
+  "max_size": 460,
+  "median": 1.0,
+  "frac_mid_5_30": 0.1755,
+  "powerlaw_test_REPORTED_NOT_GATING": {
+    "alpha_in_range": false,
+    "ks_not_rejected": false,
+    "lr_vs_exponential": -12873.0,
+    "lr_p": 0.0,
+    "powerlaw_favoured": false,
+    "note": "Exponential is favoured. Reported, not hidden. See docs/FINDINGS.md."
+  },
+  "gate_checks": {
+    "size_span_ge_50x": true,
+    "tail_heavy": true,
+    "not_all_tiny": true,
+    "not_collapse": true,
+    "not_bimodal": true
+  },
+  "span": 460.0,
+  "tail_sd": 16.2,
+  "frac_size_1": 0.512,
+  "PASSED": true
+}
