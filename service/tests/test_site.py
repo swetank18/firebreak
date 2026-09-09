@@ -21,7 +21,10 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 PITCH = REPO / "www" / "index.html"
-CONSOLE = REPO / "www" / "sim" / "index.html"
+CONSOLE = REPO / "www" / "sim" / "index.html"          # 3D
+CONSOLE_APP = REPO / "www" / "sim" / "app.js"
+CONSOLE_2D = REPO / "www" / "sim" / "2d" / "index.html"  # the fallback
+THREE = REPO / "www" / "sim" / "vendor" / "three.min.js"
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +39,20 @@ def console() -> str:
     if not CONSOLE.exists():
         pytest.fail("www/sim/index.html missing. Run scripts/build_site.py.")
     return CONSOLE.read_text()
+
+
+@pytest.fixture(scope="module")
+def app() -> str:
+    if not CONSOLE_APP.exists():
+        pytest.fail("www/sim/app.js missing. Run scripts/build_site.py.")
+    return CONSOLE_APP.read_text()
+
+
+@pytest.fixture(scope="module")
+def console2d() -> str:
+    if not CONSOLE_2D.exists():
+        pytest.fail("www/sim/2d/index.html missing. Run scripts/build_site.py.")
+    return CONSOLE_2D.read_text()
 
 
 def test_both_pages_are_whole_documents(pitch, console):
@@ -72,17 +89,61 @@ def test_console_carries_all_three_runs(console):
     assert d["runs"]["human"]["summary"]["headline"] > d["runs"]["firebreak"]["summary"]["headline"]
 
 
-def test_console_has_the_controls_the_runbook_promises(console):
+def test_console_has_the_controls_the_runbook_promises(console, app):
     """Six keypresses, a rewindable clock, and three runs to switch between."""
     for probe, why in [
         ('id="beats"', "no beat bar"),
         ('id="track"', "no scrubbable timeline — the rewind demo needs one"),
         ('id="runs"', "no run selector"),
         ('id="play"', "no transport control"),
-        ("e.key >= '1' && e.key <= '6'", "keys 1-6 do not drive the beats"),
         ('aria-label="Scrub the scenario clock"', "the timeline is not labelled for a screen reader"),
     ]:
         assert probe in console, why
+    assert "e.key >= '1' && e.key <= '6'" in app, "keys 1-6 do not drive the beats"
+
+
+def test_the_3d_view_runs_offline():
+    """EXECUTION.md: offline, no network, no live model call.
+
+    three.js is vendored into the repo rather than pulled from a CDN, because a
+    venue's wifi is not part of the demo. If this file goes missing the console
+    silently falls back to the no-WebGL panel and the demo is a dead canvas.
+    """
+    assert THREE.exists(), "www/sim/vendor/three.min.js missing — the 3D view needs it"
+    assert THREE.stat().st_size > 100_000
+    assert 'src="vendor/three.min.js"' in CONSOLE.read_text(), (
+        "the console does not load the vendored three.js, so it depends on a network"
+    )
+
+
+def test_the_2d_fallback_exists_and_reads_the_same_scenario(console2d, console):
+    """EXECUTION.md non-negotiable 6: a 2D fallback exists, on the identical schema.
+
+    If WebGL is unavailable on the venue projector, the same six keys have to
+    work. Both pages are generated from one exported scenario, so they cannot
+    disagree about what happened.
+    """
+    def payload(html: str) -> dict:
+        return json.loads(re.search(r"const DATA = (\{.*?\});\n", html, re.S).group(1))
+
+    a, b = payload(console), payload(console2d)
+    assert a["seed"] == b["seed"]
+    assert a["runs"]["do_nothing"]["summary"] == b["runs"]["do_nothing"]["summary"]
+    assert 'href="2d/"' in console, "the 3D console does not offer the fallback"
+    assert "webgl" in console.lower(), "no WebGL fallback message"
+
+
+def test_the_flood_is_the_hazard_field_not_an_animation(console):
+    """The water level shown is what the engine used to stress the assets."""
+    d = json.loads(re.search(r"const DATA = (\{.*?\});\n", console, re.S).group(1))
+    flood = d.get("flood")
+    assert flood, "no flood field exported — the water would be decoration"
+    assert len(flood["level"]) > 20 and flood["peak"] > 0
+    assert max(flood["level"]) == pytest.approx(flood["peak"], rel=1e-6)
+    # it is a front: it rises and it recedes
+    assert flood["level"][0] < flood["peak"] and flood["level"][-1] < flood["peak"]
+    # every asset carries the elevation the flood was compared against
+    assert all("e" in n for n in d["nodes"])
 
 
 def test_the_renderer_computes_no_simulation_numbers(pitch, console):

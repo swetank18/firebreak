@@ -49,6 +49,12 @@ class HazardField:
     name: str
     stress: dict[str, np.ndarray]  # node_id -> stress per tick
     n_ticks: int
+    # For hazards that have a physical field behind the stress, the field
+    # itself. The flood keeps its water level here so the console can show the
+    # water that actually drove the cascade rather than an animation of one.
+    # In the same normalised-elevation units as `elevation`.
+    level: np.ndarray | None = None
+    elevation: dict[str, float] | None = None
 
     def at(self, node_id: str, tick: int) -> float:
         arr = self.stress.get(node_id)
@@ -90,13 +96,15 @@ def monsoon_flood(g: CityGraph, n_ticks: int, seed: int) -> HazardField:
     level = peak_level * np.exp(-((np.arange(n_ticks) - peak) ** 2) / (2 * sigma**2))
 
     stress: dict[str, np.ndarray] = {}
+    elevation: dict[str, float] = {}
     for n in g.nodes:
         e = exposure.get(n.kind, 0.15)
         elev = (n.lat - lo) / (hi - lo + 1e-9)          # 0 = lowest ground
         depth = np.clip(level - elev, 0.0, None)        # zero outside the footprint
         stress[n.id] = np.clip(e * (depth / max(peak_level, 1e-9)) * rng.uniform(0.75, 1.25),
                                0.0, 1.0)
-    return HazardField("monsoon_flood", stress, n_ticks)
+        elevation[n.id] = float(elev)
+    return HazardField("monsoon_flood", stress, n_ticks, level=level, elevation=elevation)
 
 
 def heatwave(g: CityGraph, n_ticks: int, seed: int) -> HazardField:

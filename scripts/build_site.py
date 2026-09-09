@@ -14,13 +14,19 @@ from datetime import datetime, timezone
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TPL = ROOT / "scripts" / "pitch_template.html"
 CONSOLE_TPL = ROOT / "scripts" / "console_template.html"
+CONSOLE3D_TPL = ROOT / "scripts" / "console3d_template.html"
+CONSOLE3D_APP = ROOT / "scripts" / "console3d_app.js"
 DATA = ROOT / "console" / "data" / "demo.json"
 RESULTS = ROOT / "eval" / "results"
 OUT = ROOT / "www" / "index.html"
 # The simulation lives at its own URL. It is an instrument, not a section of a
 # write-up: full viewport, nothing scrolls, driven from the keyboard. Keeping it
 # inside the pitch page meant the page had to be scrolled to during a demo.
-CONSOLE_OUT = ROOT / "www" / "sim" / "index.html"
+# 3D is the console; 2D is the fallback that reads the identical scenario file.
+# EXECUTION.md non-negotiable 6 requires the fallback to exist from day one, and
+# the cut list puts "3D map (keep 2D)" above deployment — so both ship.
+CONSOLE3D_OUT = ROOT / "www" / "sim" / "index.html"
+CONSOLE_OUT = ROOT / "www" / "sim" / "2d" / "index.html"
 
 
 def _res(name: str) -> dict:
@@ -134,6 +140,14 @@ def _arms() -> tuple[str, str]:
     return rows, cap
 
 
+def _count_tests() -> str:
+    """Counted from the test files, not typed. It read 20 while 54 were green."""
+    n = 0
+    for f in (ROOT / "service" / "tests").glob("test_*.py"):
+        n += len(re.findall(r"^def test_", f.read_text(), re.M))
+    return str(n)
+
+
 def _demo(d: dict) -> tuple[str, str]:
     runs, order = d.get("runs", {}), ["do_nothing", "firebreak", "human"]
     label = {"do_nothing": "Do nothing",
@@ -217,6 +231,9 @@ def main() -> None:
         ("__ARMS_CAPTION__", arms_caption),
         ("__DEMO_ROWS__", demo_rows),
         ("__DEMO_CAPTION__", demo_caption),
+        ("__N_TESTS__", _count_tests()),
+        ("__N_SCENARIOS__", f"{_res('realism')['n_scenarios']:,}"),
+        ("__FLOOD_PEAK__", str((d.get("flood") or {}).get("peak", "n/a"))),
     ):
         body = body.replace(key, val)
     left = set(re.findall(r"__[A-Z_]+__", body))
@@ -236,9 +253,20 @@ def main() -> None:
     OUT.write_text(HEAD + "</head>\n<body>\n" + body + "\n</body>\n</html>\n")
     print(f"wrote {OUT.relative_to(ROOT)}  ({OUT.stat().st_size:,} bytes)")
 
-    # ---- the simulation console, same data, its own URL ----
-    console = CONSOLE_TPL.read_text().replace(
-        "__DATA__", json.dumps(d, separators=(",", ":")))
+    # ---- the 3D console: the flood over Chennai ----
+    payload = json.dumps(d, separators=(",", ":"))
+    c3 = CONSOLE3D_TPL.read_text().replace("__DATA__", payload)
+    left = set(re.findall(r"__[A-Z_]+__", c3))
+    if left:
+        raise SystemExit(f"unfilled placeholders in the 3D template: {sorted(left)}")
+    CONSOLE3D_OUT.parent.mkdir(parents=True, exist_ok=True)
+    CONSOLE3D_OUT.write_text(
+        CONSOLE_HEAD + "</head>\n<body>\n" + c3 + "\n</body>\n</html>\n")
+    (CONSOLE3D_OUT.parent / "app.js").write_text(CONSOLE3D_APP.read_text())
+    print(f"wrote {CONSOLE3D_OUT.relative_to(ROOT)}  ({CONSOLE3D_OUT.stat().st_size:,} bytes)")
+
+    # ---- the 2D fallback, same data, no WebGL and no tiles ----
+    console = CONSOLE_TPL.read_text().replace("__DATA__", payload)
     left = set(re.findall(r"__[A-Z_]+__", console))
     if left:
         raise SystemExit(f"unfilled placeholders in the console template: {sorted(left)}")

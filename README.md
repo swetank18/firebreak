@@ -80,7 +80,8 @@ Built and measured. Every number below is produced by a script in `eval/` and re
 | Counterfactual intervention search with deadlines | `decision/`, `eval/arms.py` |
 | Seven-arm ablation, H1–H4, pre-registration diff | `eval/results/results.md`, `eval/results/prereg_diff.md` |
 | The write-up, with the evidence tables | `www/index.html` |
-| **The simulation console — the six-beat demo** | **`www/sim/index.html`** |
+| **The 3D flood console — the six-beat demo** | **`www/sim/index.html`** |
+| 2D fallback, identical schema, no WebGL | `www/sim/2d/index.html` |
 | The decision loop, runnable with no server or uplink | `python -m service.decide` |
 
 **Two of four pre-registered predictions went against us and both are reported** — see `eval/results/prereg_diff.md`. So did the power-law realism check, which is kept and reported as failing rather than deleted. What we found by measuring rather than by reading is in `docs/FINDINGS.md`, and what does not work is in `docs/LIMITATIONS.md`, written by us before a judge writes it for us.
@@ -106,13 +107,24 @@ run. Nothing here uses them: `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest`.
 
 ### The demo
 
-`www/sim/index.html` is the console: the city, a clock you can scrub and rewind,
-and three replays of the **same seed** — do nothing, Firebreak's action, and the
+`www/sim/index.html` is Chennai in three dimensions, under water. The terrain is
+the model's own elevation proxy — latitude, low ground south — and **the water is
+the hazard field the engine actually used**: `flood.level` is exported straight
+out of `city/engine/hazard.py`, in the same units as each asset's elevation, so
+an asset is submerged on screen exactly when it was being stressed in the
+simulation. The flood rises, peaks around hour 25, and recedes.
+
+Three replays of the **same seed** — do nothing, Firebreak's action, and the
 action an experienced operator would reach for. Keys <kbd>1</kbd>–<kbd>6</kbd>
-drive the six beats, space plays, arrows step an hour. It is a static file: no
-server, no network, no model call. In the intervention runs the map rings every
-asset that is down in the do-nothing run and still standing here, so the
-counterfactual is drawn rather than only counted.
+drive the six beats, space plays, arrows step an hour, and the clock scrubs. In
+the intervention runs every asset that is down in the do-nothing run and still
+standing here turns green, so the counterfactual is drawn rather than only
+counted.
+
+three.js is vendored into the repo, so it needs no network: a venue's wifi is
+not part of the demo. `www/sim/2d/index.html` reads the identical scenario file
+and runs the same six beats with no WebGL at all, for a projector that cannot
+give us a GL context.
 
 **Beat 5 has to fail.** Hardening the most critical assets, at the same budget,
 does not stop the cascade. `scripts/export_demo.py` refuses to write the file if

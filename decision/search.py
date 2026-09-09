@@ -222,13 +222,16 @@ def _rationale(action: Action, base, alt, node, n_dependents: int = 0) -> list[s
     by line, and that is a deployment argument as much as an ethical one.
     """
     out = []
+    # Only claim what rounds to something. "contains 0 of 344 expected failures"
+    # and "cuts cascade probability 100% to 100%" are both literally true and
+    # both say nothing, and they were going on screen during the demo.
     drop = base.expected_reach - alt.expected_reach
-    if drop > 0:
+    if drop >= 0.5:
         out.append(f"contains {drop:.0f} of {base.expected_reach:.0f} expected asset failures")
     hosp = base.damage.hospital_critical_hours - alt.damage.hospital_critical_hours
-    if hosp > 0:
+    if hosp >= 0.5:
         out.append(f"prevents {hosp:.0f} hospital-critical hours")
-    if base.p_cascade > 0:
+    if base.p_cascade - alt.p_cascade >= 0.005:
         out.append(f"cuts cascade probability {base.p_cascade:.0%} to {alt.p_cascade:.0%}")
     if node is not None and node.buffer_s > 0 and action.kind == "preposition":
         out.append(f"target holds a {node.buffer_s/3600:.0f} h reserve that resupply must reach")

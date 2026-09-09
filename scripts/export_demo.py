@@ -20,6 +20,7 @@ from pathlib import Path
 
 import numpy as np
 
+from city.engine import hazard as hz
 from city.engine import runner
 from city.engine.chains import true_chains
 from city.topology import chennai
@@ -163,8 +164,28 @@ def main() -> int:
 
     ranked_best = sorted(best["dec"].ranked, key=lambda iv: -iv.damage_prevented_headline)
     top = ranked_best[0] if ranked_best else None
+    # THE FLOOD ITSELF, not an animation of one. This is the hazard field that
+    # produced the cascade above: `level` is the water level in normalised
+    # elevation units per tick, and `e` is each asset's elevation on the same
+    # scale. An asset is under water exactly when level >= e, which is the
+    # condition the engine used to decide whether it was being stressed.
+    n_ticks = int(best["base"].horizon_s / TICK)
+    field = hz.build("monsoon_flood", g, n_ticks, seed)
+    lvl = field.level if field.level is not None else np.zeros(n_ticks)
+    k = hz.INTENSITY.get("monsoon_flood", 1.0)
+    bins = 180
+    step = max(1, n_ticks // bins)
+    flood = {
+        "level": [round(float(v), 4) for v in lvl[::step]],
+        "dt_s": step * TICK,
+        "peak": round(float(lvl.max()), 4),
+        "peak_t_s": round(float(int(lvl.argmax()) * TICK), 1),
+        "intensity": k,
+    }
+    elev = field.elevation or {}
     nodes = [{"id": n.id, "l": n.layer, "k": n.kind, "lat": round(n.lat, 5), "lon": round(n.lon, 5),
               "pop": n.population_served, "w": n.criticality_weight,
+              "e": round(float(elev.get(n.id, 0.5)), 4),
               "buf": int(n.buffer_s)} for n in g.nodes]
     deps = [{"s": e.src, "d": e.dst} for e in g.edges if e.relation == "depends_on"]
 
@@ -181,7 +202,7 @@ def main() -> int:
                     bestgap, pair = gap, ((a, b) if a[2] > b[2] else (b, a))
 
     payload = {
-        "city": g.city_id, "seed": seed, "nodes": nodes, "deps": deps,
+        "city": g.city_id, "seed": seed, "nodes": nodes, "deps": deps, "flood": flood,
         "horizon_s": best["base"].horizon_s, "t_decide_s": best["t_dec"],
         "runs": runs,
         "timeline": tl0,          # kept: the 2D fallback reads this directly
