@@ -16,6 +16,8 @@ TPL = ROOT / "scripts" / "pitch_template.html"
 CONSOLE_TPL = ROOT / "scripts" / "console_template.html"
 CONSOLE3D_TPL = ROOT / "scripts" / "console3d_template.html"
 CONSOLE3D_APP = ROOT / "scripts" / "console3d_app.js"
+OPS_TPL = ROOT / "scripts" / "ops_template.html"
+OPS_APP = ROOT / "scripts" / "ops_app.js"
 DATA = ROOT / "console" / "data" / "demo.json"
 RESULTS = ROOT / "eval" / "results"
 OUT = ROOT / "www" / "index.html"
@@ -27,6 +29,10 @@ OUT = ROOT / "www" / "index.html"
 # the cut list puts "3D map (keep 2D)" above deployment — so both ship.
 CONSOLE3D_OUT = ROOT / "www" / "sim" / "index.html"
 CONSOLE_OUT = ROOT / "www" / "sim" / "2d" / "index.html"
+# The operator dashboard. Not a replay: it picks the scenario and drives it,
+# against a live engine when one is running and a precomputed matrix when not.
+OPS_OUT = ROOT / "www" / "ops" / "index.html"
+OPS_DATA = ROOT / "www" / "ops" / "data"
 
 
 def _res(name: str) -> dict:
@@ -283,6 +289,21 @@ def main() -> None:
         CONSOLE_HEAD + "</head>\n<body>\n" + c3 + "\n</body>\n</html>\n")
     (CONSOLE3D_OUT.parent / "app.js").write_text(CONSOLE3D_APP.read_text())
     print(f"wrote {CONSOLE3D_OUT.relative_to(ROOT)}  ({CONSOLE3D_OUT.stat().st_size:,} bytes)")
+
+    # ---- the operator dashboard ----
+    idx = OPS_DATA / "index.json"
+    if not idx.exists():
+        raise SystemExit("www/ops/data/index.json missing. Run scripts/export_matrix.py "
+                         "— the dashboard needs a scenario matrix to control.")
+    ops = OPS_TPL.read_text().replace("__MATRIX__", idx.read_text().strip())
+    left = set(re.findall(r"__[A-Z_]+__", ops))
+    if left:
+        raise SystemExit(f"unfilled placeholders in the ops template: {sorted(left)}")
+    OPS_OUT.parent.mkdir(parents=True, exist_ok=True)
+    OPS_OUT.write_text(CONSOLE_HEAD + "</head>\n<body>\n" + ops + "\n</body>\n</html>\n")
+    (OPS_OUT.parent / "ops.js").write_text(OPS_APP.read_text())
+    n_sc = len(json.loads(idx.read_text())["scenarios"])
+    print(f"wrote {OPS_OUT.relative_to(ROOT)}  ({n_sc} scenarios controllable)")
 
     # ---- the 2D fallback, same data, no WebGL and no tiles ----
     console = CONSOLE_TPL.read_text().replace("__DATA__", payload)

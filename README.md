@@ -130,6 +130,30 @@ give us a GL context.
 does not stop the cascade. `scripts/export_demo.py` refuses to write the file if
 that ever stops being true, and CI asserts it.
 
+### The operator dashboard
+
+`www/ops/index.html` is the control room view, and it is the one that **controls
+the simulation** rather than replaying it. Choose the hazard, the seed, how late
+the call is made; the alert queue fills as the clock runs, ranked either by how
+loud each alarm is or by its branching ratio. Tick *reveal which ones reached a
+hospital* and the two rankings can be judged: on the flagship scenario the top
+ten by loudness contain **5 of 10** alarms that went on to reach a hospital,
+against **8 of 10** by branching ratio, on a base rate of 44%. Dispatch or
+dismiss the recommendation and it is written to a decision log against the
+scenario clock.
+
+Two engines sit behind it. Served statically it reads a precomputed matrix of
+scenarios in `www/ops/data/`. Run the engine locally and it drives the real
+thing:
+
+```bash
+python -m service.api          # stdlib only, nothing to install
+# then open http://127.0.0.1:8000/ops/
+```
+
+The page detects the live engine on its own and unlocks every hazard, budget and
+decision time. `scripts/export_matrix.py` regenerates the static matrix.
+
 ### The decision loop
 
 The decision path runs on its own, with no server and no network — which is the

@@ -1,0 +1,139 @@
+{
+ "scenarios": [
+  {
+   "key": "cyber-s90105-d25",
+   "hazard": "cyber",
+   "seed": 90105,
+   "decide_frac": 0.25,
+   "assets_failed": 378,
+   "hospitals_hit": 0,
+   "people": 2290904,
+   "headline": 7159039.2,
+   "has_action": false
+  },
+  {
+   "key": "cyber-s90210-d25",
+   "hazard": "cyber",
+   "seed": 90210,
+   "decide_frac": 0.25,
+   "assets_failed": 357,
+   "hospitals_hit": 1,
+   "people": 2287731,
+   "headline": 5450146.3,
+   "has_action": false
+  },
+  {
+   "key": "cyber-s90311-d25",
+   "hazard": "cyber",
+   "seed": 90311,
+   "decide_frac": 0.25,
+   "assets_failed": 379,
+   "hospitals_hit": 0,
+   "people": 3084673,
+   "headline": 7584108.2,
+   "has_action": false
+  },
+  {
+   "key": "equipment_age-s90105-d25",
+   "hazard": "equipment_age",
+   "seed": 90105,
+   "decide_frac": 0.25,
+   "assets_failed": 183,
+   "hospitals_hit": 0,
+   "people": 154566,
+   "headline": 312465.9,
+   "has_action": true
+  },
+  {
+   "key": "equipment_age-s90210-d25",
+   "hazard": "equipment_age",
+   "seed": 90210,
+   "decide_frac": 0.25,
+   "assets_failed": 189,
+   "hospitals_hit": 1,
+   "people": 43749,
+   "headline": 68731.9,
+   "has_action": true
+  },
+  {
+   "key": "equipment_age-s90311-d25",
+   "hazard": "equipment_age",
+   "seed": 90311,
+   "decide_frac": 0.25,
+   "assets_failed": 202,
+   "hospitals_hit": 0,
+   "people": 70849,
+   "headline": 118991.7,
+   "has_action": true
+  },
+  {
+   "key": "heatwave-s90105-d25",
+   "hazard": "heatwave",
+   "seed": 90105,
+   "decide_frac": 0.25,
+   "assets_failed": 150,
+   "hospitals_hit": 0,
+   "people": 677892,
+   "headline": 2334765.3,
+   "has_action": true
+  },
+  {
+   "key": "heatwave-s90210-d25",
+   "hazard": "heatwave",
+   "seed": 90210,
+   "decide_frac": 0.25,
+   "assets_failed": 512,
+   "hospitals_hit": 5,
+   "people": 4976209,
+   "headline": 14048249.9,
+   "has_action": true
+  },
+  {
+   "key": "heatwave-s90311-d25",
+   "hazard": "heatwave",
+   "seed": 90311,
+   "decide_frac": 0.25,
+   "assets_failed": 279,
+   "hospitals_hit": 1,
+   "people": 465453,
+   "headline": 871384.6,
+   "has_action": true
+  },
+  {
+   "key": "monsoon_flood-s90105-d25",
+   "hazard": "monsoon_flood",
+   "seed": 90105,
+   "decide_frac": 0.25,
+   "assets_failed": 407,
+   "hospitals_hit": 5,
+   "people": 1947483,
+   "headline": 8358118.8,
+   "has_action": true
+  },
+  {
+   "key": "monsoon_flood-s90210-d25",
+   "hazard": "monsoon_flood",
+   "seed": 90210,
+   "decide_frac": 0.25,
+   "assets_failed": 394,
+   "hospitals_hit": 6,
+   "people": 2382086,
+   "headline": 9869721.6,
+   "has_action": true
+  },
+  {
+   "key": "monsoon_flood-s90311-d25",
+   "hazard": "monsoon_flood",
+   "seed": 90311,
+   "decide_frac": 0.25,
+   "assets_failed": 234,
+   "hospitals_hit": 3,
+   "people": 1031512,
+   "headline": 4026615.8,
+   "has_action": true
+  }
+ ],
+ "budget": 5,
+ "protect": 0.9,
+ "generated_from": "scripts/export_matrix.py"
+}

@@ -188,3 +188,46 @@ def test_the_memorandum_states_its_own_confidence(app):
     """A directive that hides that its selection layer is unproven is not honest."""
     assert "not distinguishable from" in app
     assert "No model produced this text" in app or "no language model" in app.lower()
+
+
+OPS = REPO / "www" / "ops" / "index.html"
+OPS_APP = REPO / "www" / "ops" / "ops.js"
+OPS_INDEX = REPO / "www" / "ops" / "data" / "index.json"
+
+
+def test_operator_dashboard_controls_a_scenario_matrix():
+    """The consoles replay one scenario. The dashboard picks one and drives it."""
+    for f in (OPS, OPS_APP, OPS_INDEX):
+        assert f.exists(), f"{f.name} missing. Run scripts/export_matrix.py, then build_site.py."
+    idx = json.loads(OPS_INDEX.read_text())
+    assert len(idx["scenarios"]) >= 8, "too thin a matrix to be worth controlling"
+    hazards = {s["hazard"] for s in idx["scenarios"]}
+    assert len(hazards) >= 3, f"only {hazards} — an operator should be able to change the hazard"
+    for s in idx["scenarios"]:
+        assert (REPO / "www" / "ops" / "data" / f"{s['key']}.json").exists()
+
+
+def test_operator_dashboard_ranks_by_danger_and_can_be_judged_on_it():
+    app = OPS_APP.read_text()
+    for probe, why in [
+        ("sortBy === 'br'", "no danger ranking"),
+        ("hindsight", "no way to reveal which alarms actually mattered"),
+        ("Dispatch", "an operator console you cannot act in is a slideshow"),
+        ("decided.push", "decisions are not logged"),
+    ]:
+        assert probe in app, why
+
+
+def test_the_alert_outcome_is_exported_not_inferred_in_the_browser():
+    """`h` is ground truth from true_chains, computed once at export."""
+    key = json.loads(OPS_INDEX.read_text())["scenarios"][0]["key"]
+    sc = json.loads((REPO / "www" / "ops" / "data" / f"{key}.json").read_text())
+    tl = sc["runs"]["do_nothing"]["timeline"]
+    assert tl and all("h" in r and "br" in r and "s" in r for r in tl)
+
+
+def test_a_zero_deadline_is_not_shown_as_an_expiry():
+    """Zero means the solver could not establish one. Saying EXPIRED there is
+    the system claiming a certainty it does not have."""
+    app = OPS_APP.read_text()
+    assert "hasDeadline" in app and "no deadline established" in app
