@@ -1,154 +1,199 @@
 <title>Firebreak — operator dashboard</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
+/* Firebreak operator console.
+   Deep ground, one vivid crisis colour used sparingly, and a real type scale —
+   the previous pass set everything at 11-13px, which is why it read as an
+   engineering readout rather than an instrument. */
 :root{
-  --ground:#f4f6f8;--panel:#ffffff;--ink:#111820;--ink-2:#495868;--ink-3:#7b8b9c;
-  --rule:#d7dee6;--rule-2:#e8edf2;
-  --power:#c47f10;--water:#2f7fbf;--transport:#8a94a0;--telecom:#7a5bb5;--health:#1f2a36;
-  --alarm:#c0392b;--safe:#2e7d5b;--accent:#c47f10;
+  --ground:#f5f7f9; --panel:#ffffff; --raised:#eef2f6;
+  --ink:#0d141c; --ink-2:#4a5a6d; --ink-3:#7c8 da0;
+  --ink-3:#7b8b9e; --rule:#dde4ec; --rule-2:#eaeff4;
+  --power:#b8760c; --water:#1f7fd0; --transport:#8391a1; --telecom:#6f4fc0; --health:#101820;
+  --crisis:#d2321f; --safe:#128a5a; --warn:#b57800; --accent:#b8760c;
+  --shadow:0 1px 2px rgba(13,20,28,.05),0 10px 30px rgba(13,20,28,.06);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --ground:#0d1218;--panel:#141c25;--ink:#e6edf4;--ink-2:#a3b2c2;--ink-3:#6f8092;
-  --rule:#243040;--rule-2:#1c2733;
-  --power:#e0a340;--water:#5aa5de;--transport:#7d8996;--telecom:#a184d8;--health:#e6edf4;
-  --alarm:#e0685a;--safe:#4fae84;--accent:#e0a340;
+  --ground:#080b10; --panel:#0f141c; --raised:#161d27;
+  --ink:#eaf0f7; --ink-2:#96a5b8; --ink-3:#5d6e82;
+  --rule:#1e2733; --rule-2:#161d27;
+  --power:#f0ad3c; --water:#3e9be8; --transport:#8494a6; --telecom:#a688f0; --health:#eaf0f7;
+  --crisis:#ff4a38; --safe:#2fd98d; --warn:#ffb020; --accent:#f0ad3c;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.42);
 }}
 :root[data-theme="dark"]{
-  --ground:#0d1218;--panel:#141c25;--ink:#e6edf4;--ink-2:#a3b2c2;--ink-3:#6f8092;
-  --rule:#243040;--rule-2:#1c2733;
-  --power:#e0a340;--water:#5aa5de;--transport:#7d8996;--telecom:#a184d8;--health:#e6edf4;
-  --alarm:#e0685a;--safe:#4fae84;--accent:#e0a340;
+  --ground:#080b10; --panel:#0f141c; --raised:#161d27;
+  --ink:#eaf0f7; --ink-2:#96a5b8; --ink-3:#5d6e82;
+  --rule:#1e2733; --rule-2:#161d27;
+  --power:#f0ad3c; --water:#3e9be8; --transport:#8494a6; --telecom:#a688f0; --health:#eaf0f7;
+  --crisis:#ff4a38; --safe:#2fd98d; --warn:#ffb020; --accent:#f0ad3c;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 12px 34px rgba(0,0,0,.42);
 }
 *{box-sizing:border-box}
 html,body{height:100%}
-body{margin:0;background:var(--ground);color:var(--ink);overflow:hidden;
-  font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:13px}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:13.5px;line-height:1.5;-webkit-font-smoothing:antialiased}
 button,select,input{font:inherit;color:inherit}
 button{background:none;border:0;cursor:pointer}
-button:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--accent);outline-offset:2px}
 .mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.lbl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--ink-3)}
 
-.app{display:grid;height:100dvh;grid-template-rows:auto auto minmax(0,1fr)}
+/* height:100vh first so a browser without dvh still gets a full-height layout.
+   Without the fallback the grid collapsed and the page rendered blank. */
+.app{display:grid;height:100vh;height:100dvh;grid-template-rows:auto auto minmax(0,1fr)}
 
-.top{display:flex;align-items:center;gap:16px;padding:9px 16px;background:var(--panel);
-  border-bottom:2px solid var(--ink);flex-wrap:wrap}
-.wordmark{font-family:"IBM Plex Mono",monospace;font-weight:700;letter-spacing:.18em;font-size:14px}
-.role{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ground);background:var(--ink);padding:2px 7px}
-.mode{font-family:"IBM Plex Mono",monospace;font-size:11px;display:flex;align-items:center;gap:6px;
-  color:var(--ink-3)}
-.mode i{width:8px;height:8px;border-radius:50%;background:var(--ink-3)}
-.mode.live i{background:var(--safe)} .mode.live{color:var(--safe)}
-.top .clock{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;
-  font-variant-numeric:tabular-nums}
-.top a{color:var(--ink-2);font-size:12px;text-decoration:none;border-bottom:1px solid var(--rule)}
+/* ---------------------------------------------------------------- header */
+.top{display:flex;align-items:center;gap:18px;padding:14px 24px;background:var(--panel);
+  border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.wordmark{font-family:"IBM Plex Mono",monospace;font-weight:600;letter-spacing:.2em;
+  font-size:15px}
+.role{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--ground);background:var(--ink);padding:3px 8px}
+.mode{font-family:"IBM Plex Mono",monospace;font-size:11px;display:flex;align-items:center;
+  gap:7px;color:var(--ink-3)}
+.mode i{width:7px;height:7px;border-radius:50%;background:var(--ink-3)}
+.mode.live i{background:var(--safe);box-shadow:0 0 0 3px rgba(47,217,141,.18)}
+.mode.live{color:var(--safe)}
+.top .clock{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:26px;
+  font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.top a{color:var(--ink-3);font-size:12.5px;text-decoration:none}
 .top a:hover{color:var(--ink)}
 
-/* scenario control */
-.ctl{display:flex;align-items:flex-end;gap:14px;padding:10px 16px;background:var(--panel);
+/* --------------------------------------------------------------- controls */
+.ctl{display:flex;align-items:flex-end;gap:18px;padding:14px 24px;background:var(--panel);
   border-bottom:1px solid var(--rule);flex-wrap:wrap}
-.field{display:flex;flex-direction:column;gap:3px}
-.field label{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.11em;
-  text-transform:uppercase;color:var(--ink-3)}
-.field select,.field input{background:var(--ground);border:1px solid var(--rule);
-  padding:5px 8px;font-family:"IBM Plex Mono",monospace;font-size:12px;min-width:130px}
-.field input[type=range]{min-width:120px;padding:0}
-.run{border:1px solid var(--ink);background:var(--ink);color:var(--ground);padding:7px 18px;
-  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.07em;text-transform:uppercase}
-.run[disabled]{opacity:.45;cursor:progress}
-.ctlnote{font-size:11px;color:var(--ink-3);max-width:36ch;line-height:1.45}
+.field{display:flex;flex-direction:column;gap:5px}
+.field select{background:var(--raised);border:1px solid var(--rule);padding:8px 11px;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;min-width:150px;color:var(--ink)}
+.run{border:0;background:var(--ink);color:var(--ground);padding:10px 24px;
+  font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.1em;
+  text-transform:uppercase;font-weight:600}
+.run:hover{opacity:.88}
+.run[disabled]{opacity:.4;cursor:progress}
+.ctlnote{font-size:12px;color:var(--ink-3);max-width:40ch;line-height:1.5;margin:0}
 
-/* body */
-.grid{display:grid;grid-template-columns:minmax(340px,1.05fr) minmax(0,1.5fr) minmax(320px,1fr);
+/* ------------------------------------------------------------------ body */
+.grid{display:grid;grid-template-columns:minmax(400px,1.15fr) minmax(0,1.6fr) minmax(330px,.95fr);
   min-height:0}
-.col{min-height:0;overflow-y:auto;border-right:1px solid var(--rule);background:var(--panel)}
+.col{min-height:0;overflow-y:auto;background:var(--panel);border-right:1px solid var(--rule)}
 .col:last-child{border-right:0}
-.blk{border-bottom:1px solid var(--rule);padding:12px 14px}
-.blk h2{margin:0 0 9px;font-size:10px;letter-spacing:.13em;text-transform:uppercase;
-  color:var(--ink-3);font-weight:500;font-family:"IBM Plex Mono",monospace;
-  display:flex;align-items:center;gap:8px}
-.blk h2 .cnt{margin-left:auto;color:var(--ink-2)}
+.pad{padding:20px 22px}
+.pad+.pad{border-top:1px solid var(--rule)}
+.hd{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.hd .cnt{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--ink-2)}
 
-/* queue */
-.sortbar{display:flex;border:1px solid var(--rule);margin-bottom:9px}
-.sortbar button{flex:1;padding:6px 8px;font-family:"IBM Plex Mono",monospace;font-size:11px;
-  color:var(--ink-2);border-right:1px solid var(--rule)}
-.sortbar button:last-child{border-right:0}
-.sortbar button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
-.qhead,.qrow{display:grid;grid-template-columns:1fr 46px 46px 16px;gap:8px;align-items:center;
-  padding:5px 7px;font-family:"IBM Plex Mono",monospace;font-size:11.5px}
-.qhead{color:var(--ink-3);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;
+/* ------------------------------------------------------------ alert queue */
+.sortbar{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px}
+.sortbar button{padding:9px 8px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  color:var(--ink-2);background:var(--raised);border:1px solid var(--rule)}
+.sortbar button[aria-pressed="true"]{background:var(--ink);color:var(--ground);
+  border-color:var(--ink);font-weight:600}
+.reveal{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2);
+  margin-bottom:16px;cursor:pointer}
+.reveal input{accent-color:var(--crisis);width:15px;height:15px}
+
+/* the payoff, above the list */
+.payoff{background:var(--raised);border-left:3px solid var(--accent);padding:14px 16px;
+  margin-bottom:18px}
+.payoff .big{font-family:"IBM Plex Mono",monospace;font-size:30px;font-weight:600;
+  line-height:1;letter-spacing:-.02em}
+.payoff .big em{font-style:normal;color:var(--ink-3);font-size:19px}
+.payoff p{margin:8px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.55}
+
+.qhead{display:grid;grid-template-columns:1fr 40px 92px 40px 14px;gap:9px;padding:0 2px 7px;
   border-bottom:1px solid var(--rule)}
-.qrow{border-bottom:1px solid var(--rule-2);cursor:pointer;text-align:left;width:100%}
-.qrow:hover{background:var(--rule-2)}
-.qrow[aria-selected="true"]{background:var(--ink);color:var(--ground)}
-.qrow .id{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qrow .br.hot{color:var(--alarm);font-weight:600}
-.qrow[aria-selected="true"] .br.hot{color:#ff9d8a}
-.qrow .out{width:8px;height:8px;border-radius:50%;background:transparent;
-  border:1px solid var(--ink-3)}
-.qrow .out.hit{background:var(--alarm);border-color:var(--alarm)}
-.precision{margin-top:9px;padding:8px 10px;border:1px solid var(--rule);
-  border-left:3px solid var(--accent);font-size:11.5px;line-height:1.5;color:var(--ink-2)}
-.precision b{color:var(--ink);font-family:"IBM Plex Mono",monospace}
-.qempty{padding:18px 8px;color:var(--ink-3);font-size:12px;line-height:1.55}
+.qrow{display:grid;grid-template-columns:1fr 40px 92px 40px 14px;gap:9px;align-items:center;
+  padding:9px 2px;width:100%;text-align:left;border-bottom:1px solid var(--rule-2)}
+.qrow:hover{background:var(--raised)}
+.qrow[aria-selected="true"]{background:var(--ink)}
+.qrow[aria-selected="true"] .qid,.qrow[aria-selected="true"] .qs{color:var(--ground)}
+.qid{font-family:"IBM Plex Mono",monospace;font-size:12.5px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.qs{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--ink-3);text-align:right}
+/* the branching ratio as a SHAPE. One number separates identical alarms, so it
+   should be readable without parsing a digit. */
+.qbar{position:relative;height:17px;background:var(--rule-2);overflow:hidden}
+.qbar span{position:absolute;left:0;top:0;bottom:0;background:var(--ink-3)}
+.qbar span.hot{background:var(--crisis)}
+.qval{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;text-align:right}
+.qval.hot{color:var(--crisis)}
+.qrow[aria-selected="true"] .qval{color:var(--ground)}
+.qbar i{position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--ink-2);opacity:.7}
+.qout{width:9px;height:9px;border-radius:50%;border:1px solid var(--ink-3);justify-self:center}
+.qout.hit{background:var(--crisis);border-color:var(--crisis);
+  box-shadow:0 0 0 3px rgba(255,74,56,.18)}
+.qempty{padding:26px 2px;color:var(--ink-3);font-size:13px;line-height:1.6}
 
-/* map + ticker */
-canvas#mini{display:block;width:100%;height:auto;background:var(--ground);
+/* ------------------------------------------------------------------- map */
+canvas#mini{display:block;width:100%;height:auto;background:var(--raised);
   border:1px solid var(--rule)}
-.tick{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);
-  border:1px solid var(--rule)}
-.tick div{background:var(--panel);padding:8px 10px}
-.tick .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.09em;
-  text-transform:uppercase;color:var(--ink-3)}
-.tick .v{font-family:"IBM Plex Mono",monospace;font-size:20px;font-weight:600;margin-top:1px}
-.runsel{display:flex;flex-direction:column;gap:1px;background:var(--rule);border:1px solid var(--rule)}
-.runsel button{display:grid;grid-template-columns:9px 1fr auto;gap:8px;align-items:center;
-  padding:7px 9px;background:var(--panel);text-align:left;font-size:12px}
-.runsel button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
-.runsel .dot{width:9px;height:9px;border-radius:50%}
-.runsel .v{font-family:"IBM Plex Mono",monospace;font-size:11px}
-.transport{display:flex;gap:6px;margin-top:9px}
-.transport button{border:1px solid var(--ink);padding:5px 12px;font-family:"IBM Plex Mono",monospace;
-  font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:var(--ink);color:var(--ground)}
-.transport button.ghost{background:transparent;color:var(--ink)}
-input[type=range].scrub{width:100%;margin-top:9px}
+.scrub{width:100%;margin-top:14px;accent-color:var(--accent)}
+.transport{display:flex;gap:8px;margin-top:12px}
+.transport button{border:1px solid var(--rule);background:var(--raised);padding:8px 16px;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.06em;
+  text-transform:uppercase}
+.transport button:first-child{background:var(--ink);color:var(--ground);border-color:var(--ink)}
 
-/* detail + action */
-.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12px}
+/* -------------------------------------------------------------- the stake */
+.stake{padding:24px 22px;border-bottom:1px solid var(--rule)}
+.stake .n{font-family:"IBM Plex Mono",monospace;font-size:clamp(40px,4.6vw,68px);
+  font-weight:600;line-height:.95;letter-spacing:-.035em;color:var(--crisis);
+  font-variant-numeric:tabular-nums}
+.stake .cap{margin-top:8px;font-size:13.5px;color:var(--ink-2)}
+.stake .sub{display:flex;gap:22px;margin-top:18px;padding-top:16px;
+  border-top:1px solid var(--rule)}
+.stake .sub div .v{font-family:"IBM Plex Mono",monospace;font-size:23px;font-weight:600;
+  line-height:1}
+.stake .sub div .k{font-size:11.5px;color:var(--ink-3);margin-top:4px}
+
+.runsel{display:flex;flex-direction:column;gap:2px;margin-top:16px}
+.runsel button{display:grid;grid-template-columns:8px 1fr auto;gap:10px;align-items:center;
+  padding:9px 11px;background:var(--raised);text-align:left;font-size:12.5px;
+  border:1px solid transparent}
+.runsel button[aria-pressed="true"]{border-color:var(--ink);background:var(--panel)}
+.runsel .dot{width:8px;height:8px;border-radius:50%}
+.runsel .v{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2)}
+
+/* ----------------------------------------------------------- the decision */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px}
 .kv dt{color:var(--ink-3)}
 .kv dd{margin:0;font-family:"IBM Plex Mono",monospace;text-align:right;word-break:break-all}
-.act{border:1px solid var(--rule);border-left:3px solid var(--safe);padding:10px 12px}
-.act.expired{border-left-color:var(--alarm);opacity:.85}
-.act .kind{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600}
-.act ul{margin:7px 0 0;padding-left:15px;color:var(--ink-2);font-size:11.5px;line-height:1.5}
-.act .tgt{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-2);margin-top:7px;
-  line-height:1.6;word-break:break-all}
-.count{display:flex;align-items:baseline;gap:8px;margin-top:9px;padding-top:9px;
-  border-top:1px solid var(--rule-2)}
-.count .t{font-family:"IBM Plex Mono",monospace;font-size:26px;font-weight:600;color:var(--safe)}
-.count .t.warn{color:var(--accent)} .count .t.gone{color:var(--alarm)}
-.count .u{font-size:11px;color:var(--ink-3);line-height:1.4}
-.btns{display:flex;gap:8px;margin-top:11px}
-.btns button{flex:1;border:1px solid var(--ink);padding:7px 10px;font-family:"IBM Plex Mono",monospace;
-  font-size:11.5px;text-transform:uppercase;letter-spacing:.05em}
-.btns .go{background:var(--safe);border-color:var(--safe);color:#fff}
-.btns .no{background:transparent}
-.btns button[disabled]{opacity:.4;cursor:not-allowed}
-.logrow{display:grid;grid-template-columns:62px 1fr;gap:9px;padding:6px 0;
-  border-bottom:1px solid var(--rule-2);font-size:11.5px}
+.act{background:var(--raised);border-left:3px solid var(--safe);padding:16px 18px}
+.act.none{border-left-color:var(--warn)}
+.act .kind{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:600}
+.act .cost{color:var(--ink-3);font-weight:400;font-size:12.5px}
+.act ul{margin:10px 0 0;padding-left:16px;color:var(--ink-2);font-size:12.5px;line-height:1.6}
+.act .tgt{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3);
+  margin-top:12px;line-height:1.7;word-break:break-all}
+.count{margin-top:16px;padding-top:14px;border-top:1px solid var(--rule)}
+.count .t{font-family:"IBM Plex Mono",monospace;font-size:34px;font-weight:600;line-height:1;
+  letter-spacing:-.02em;color:var(--safe)}
+.count .t.warn{color:var(--warn)} .count .t.gone{color:var(--crisis)}
+.count .u{display:block;margin-top:7px;font-size:12px;color:var(--ink-3);line-height:1.5}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.btns button{padding:11px 10px;font-family:"IBM Plex Mono",monospace;font-size:11.5px;
+  letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.btns .go{background:var(--safe);color:#04150d}
+.btns .no{background:var(--raised);border:1px solid var(--rule);color:var(--ink-2)}
+.btns button[disabled]{opacity:.35;cursor:not-allowed}
+.logrow{display:grid;grid-template-columns:64px 1fr;gap:12px;padding:10px 0;
+  border-bottom:1px solid var(--rule-2);font-size:12.5px;line-height:1.55}
 .logrow:last-child{border-bottom:0}
 .logrow .t{font-family:"IBM Plex Mono",monospace;color:var(--ink-3)}
-.logrow .w b{font-weight:600}
-.logrow.good .w b{color:var(--safe)} .logrow.bad .w b{color:var(--alarm)}
-.empty{color:var(--ink-3);font-size:12px;line-height:1.55}
+.logrow.good b{color:var(--safe)} .logrow.bad b{color:var(--crisis)}
+.empty{color:var(--ink-3);font-size:12.5px;line-height:1.6;margin:0}
 
-@media (max-width:1100px){
+@media (max-width:1180px){
   .grid{grid-template-columns:1fr;overflow-y:auto}
   body{overflow:auto}
+  .app{height:auto;min-height:100vh}
   .col{border-right:0;border-bottom:1px solid var(--rule);overflow:visible}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
 <div class="app">
@@ -156,86 +201,89 @@ input[type=range].scrub{width:100%;margin-top:9px}
     <span class="wordmark">FIREBREAK</span>
     <span class="role">Operator</span>
     <span class="mode" id="mode"><i></i><span id="modeText">checking engine…</span></span>
-    <span class="clock mono" id="clock">T+00:00</span>
+    <span class="clock" id="clock">T+00:00</span>
     <a href="../sim/">3D console</a>
     <a href="../">Write-up</a>
   </header>
 
   <div class="ctl">
-    <div class="field"><label for="fHazard">Hazard</label>
+    <div class="field"><label class="lbl" for="fHazard">Hazard</label>
       <select id="fHazard"></select></div>
-    <div class="field"><label for="fSeed">Scenario seed</label>
+    <div class="field"><label class="lbl" for="fSeed">Scenario</label>
       <select id="fSeed"></select></div>
-    <div class="field"><label for="fWhen">Decide at</label>
+    <div class="field"><label class="lbl" for="fWhen">Decide at</label>
       <select id="fWhen"></select></div>
-    <div class="field"><label for="fBudget">Budget (assets)</label>
+    <div class="field"><label class="lbl" for="fBudget">Budget</label>
       <select id="fBudget"></select></div>
     <button class="run" id="runBtn">Run scenario</button>
     <p class="ctlnote" id="ctlNote"></p>
   </div>
 
   <div class="grid">
-    <!-- ------------------------------------------------ alert queue -->
+    <!-- ------------------------------------------------ the queue -->
     <div class="col">
-      <div class="blk">
-        <h2>Alert queue <span class="cnt mono" id="qCount">0</span></h2>
+      <div class="pad">
+        <div class="hd"><span class="lbl">Alert queue</span>
+          <span class="cnt" id="qCount">0</span></div>
         <div class="sortbar" role="group" aria-label="Rank the queue">
           <button id="sortLoud" aria-pressed="false">Rank by loudness</button>
           <button id="sortDanger" aria-pressed="true">Rank by danger</button>
         </div>
-        <label style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);
-          margin-bottom:8px">
-          <input type="checkbox" id="hindsight"> Reveal which ones reached a hospital
+        <label class="reveal">
+          <input type="checkbox" id="hindsight">
+          Reveal which alarms reached a hospital
         </label>
-        <div class="precision" id="precision"></div>
-        <div class="qhead" style="margin-top:9px"><span>Asset</span><span>Score</span>
-          <span>n</span><span></span></div>
+        <div class="payoff" id="precision"></div>
+        <div class="qhead"><span class="lbl">Asset</span><span class="lbl"
+          style="text-align:right">Score</span><span class="lbl">Branching ratio</span>
+          <span></span><span></span></div>
         <div id="queue"></div>
       </div>
     </div>
 
-    <!-- ------------------------------------------------ situation -->
+    <!-- ------------------------------------------------ the city -->
     <div class="col">
-      <div class="blk">
-        <h2>Situation</h2>
-        <canvas id="mini" width="620" height="330"
-          aria-label="Map of the city with failed assets marked"></canvas>
+      <div class="pad">
+        <div class="hd"><span class="lbl">The city</span>
+          <span class="cnt" id="runLabel"></span></div>
+        <canvas id="mini" width="900" height="470"
+          aria-label="Map of the city with failed assets and the flood line"></canvas>
         <input type="range" class="scrub" id="scrub" min="0" max="1000" value="0"
           aria-label="Scrub the scenario clock">
         <div class="transport">
           <button id="play">Play</button>
-          <button id="reset" class="ghost">Reset</button>
-          <button id="toDecide" class="ghost">Jump to decision</button>
+          <button id="reset">Reset</button>
+          <button id="toDecide">Jump to decision</button>
         </div>
-      </div>
-      <div class="blk">
-        <h2>Impact <span class="cnt mono" id="runLabel"></span></h2>
-        <div class="tick">
-          <div><div class="k">Assets down</div><div class="v" id="cFail">0</div></div>
-          <div><div class="k">Hospitals</div><div class="v" id="cHosp" style="color:var(--alarm)">0</div></div>
-          <div><div class="k">People affected</div><div class="v" id="cPeople">0</div></div>
-          <div><div class="k">Above n=1</div><div class="v" id="cDanger" style="color:var(--accent)">0</div></div>
-        </div>
-        <div style="height:10px"></div>
-        <div class="runsel" id="runsel" role="group" aria-label="Which counterfactual to view"></div>
       </div>
     </div>
 
-    <!-- ------------------------------------------------ decision -->
+    <!-- ------------------------------------------------ the stake -->
     <div class="col">
-      <div class="blk">
-        <h2>Selected alert</h2>
-        <dl class="kv" id="detail"><dt>Nothing selected</dt><dd>—</dd></dl>
+      <div class="stake">
+        <div class="n" id="cPeople">0</div>
+        <div class="cap">people without power or water in this run</div>
+        <div class="sub">
+          <div><div class="v" id="cHosp" style="color:var(--crisis)">0</div>
+            <div class="k">hospitals down</div></div>
+          <div><div class="v" id="cFail">0</div><div class="k">assets down</div></div>
+          <div><div class="v" id="cDanger" style="color:var(--accent)">0</div>
+            <div class="k">above n=1</div></div>
+        </div>
+        <div class="runsel" id="runsel" role="group"
+          aria-label="Which counterfactual to view"></div>
       </div>
-      <div class="blk">
-        <h2>Recommended action</h2>
+      <div class="pad">
+        <div class="hd"><span class="lbl">Recommended action</span></div>
         <div id="action"></div>
       </div>
-      <div class="blk">
-        <h2>Decision log</h2>
-        <div id="log"><p class="empty">Nothing dispatched yet. Anything you do here is
-        recorded with the scenario clock, because a recommendation nobody can audit
-        afterwards is not a decision.</p></div>
+      <div class="pad">
+        <div class="hd"><span class="lbl">Selected alert</span></div>
+        <dl class="kv" id="detail"><dt>Nothing selected</dt><dd>—</dd></dl>
+      </div>
+      <div class="pad">
+        <div class="hd"><span class="lbl">Decision log</span></div>
+        <div id="log"></div>
       </div>
     </div>
   </div>

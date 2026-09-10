@@ -173,18 +173,31 @@
     var base = 0;
     for (var j = 0; j < a.length; j++) if (outcomeHit(a[j])) base++;
     var pct = Math.round(base / a.length * 100);
-    $('precision').innerHTML = 'Of the top <b>' + n + '</b> under this ranking, <b>' + c +
-      ' of ' + n + '</b> went on to reach a hospital &mdash; against a base rate of <b>' +
-      pct + '%</b> across all ' + a.length + ' alarms. Switch the ranking and watch it move.';
+    $('precision').innerHTML =
+      '<div class="big">' + c + ' <em>of ' + n + '</em></div>' +
+      '<p>of the top ' + n + ' alarms under this ranking went on to reach a hospital, ' +
+      'against a base rate of <b>' + pct + '%</b> across all ' + a.length +
+      ' alarms. Switch the ranking and watch it move.</p>';
 
     var top = a.slice(0, 60);
+    // FIXED domain, not scaled to whatever is on screen. n = 1 is the criterion
+    // the whole project rests on, so the threshold has to sit in the same place
+    // under both rankings — otherwise the bars are only comparable to each
+    // other and "above one" stops being readable at a glance.
+    var DOMAIN = 3.0;
     $('queue').innerHTML = top.map(function (r) {
       var hit = hindsight && outcomeHit(r);
+      var w = Math.max(1.5, Math.min(100, r.br / DOMAIN * 100));
+      var mark = 1 / DOMAIN * 100;
       return '<button class="qrow" data-id="' + r.n + '" aria-selected="' +
-        (selected === r.n) + '"><span class="id">' + r.n + '</span>' +
-        '<span>' + r.s.toFixed(2) + '</span>' +
-        '<span class="br' + (r.br > 1 ? ' hot' : '') + '">' + r.br.toFixed(2) + '</span>' +
-        '<span class="out' + (hit ? ' hit' : '') + '"></span></button>';
+        (selected === r.n) + '">' +
+        '<span class="qid">' + r.n + '</span>' +
+        '<span class="qs">' + r.s.toFixed(2) + '</span>' +
+        '<span class="qbar"><span class="' + (r.br > 1 ? 'hot' : '') +
+          '" style="width:' + w.toFixed(1) + '%"></span>' +
+          '<i style="left:' + mark.toFixed(1) + '%"></i></span>' +
+        '<span class="qval' + (r.br > 1 ? ' hot' : '') + '">' + r.br.toFixed(2) + '</span>' +
+        '<span class="qout' + (hit ? ' hit' : '') + '"></span></button>';
     }).join('');
     Array.prototype.forEach.call($('queue').querySelectorAll('.qrow'), function (b) {
       b.addEventListener('click', function () { select(b.dataset.id); });
@@ -334,13 +347,13 @@
       var lvl = SC.flood.level[Math.max(0, i)] || 0;
       if (lvl > 0.001) {
         var y = H - pad - lvl * (H - 2 * pad);
-        ctx.fillStyle = col('water'); ctx.globalAlpha = .16;
+        ctx.fillStyle = col('water'); ctx.globalAlpha = .22;
         ctx.fillRect(0, y, W, H - y); ctx.globalAlpha = 1;
-        ctx.strokeStyle = col('water'); ctx.lineWidth = 1;
+        ctx.strokeStyle = col('water'); ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       }
     }
-    ctx.strokeStyle = col('transport'); ctx.globalAlpha = .25; ctx.lineWidth = .4;
+    ctx.strokeStyle = col('transport'); ctx.globalAlpha = .34; ctx.lineWidth = .7;
     ctx.beginPath();
     (CITY.flow || []).forEach(function (e) {
       var a = CITY.nodes[e[0]], b = CITY.nodes[e[1]];
@@ -351,14 +364,16 @@
     var down = {};
     alerts().forEach(function (r) { down[r.n] = r; });
     CITY.nodes.forEach(function (n) {
-      var st = down[n.id], r = n.k === 'hospital' ? 3.4 : (n.l === 'transport' ? 1 : 1.9);
-      ctx.beginPath(); ctx.arc(X(n), Y(n), r, 0, 6.2832);
-      ctx.fillStyle = st ? col('alarm') : col(n.l);
-      ctx.globalAlpha = st ? 1 : (n.l === 'transport' ? .22 : .45);
+      var st = down[n.id];
+      var r = n.k === 'hospital' ? 5 : (n.l === 'transport' ? 1.5 : 3);
+      ctx.beginPath(); ctx.arc(X(n), Y(n), st ? r * 1.25 : r, 0, 6.2832);
+      ctx.fillStyle = st ? col('crisis') : col(n.l);
+      ctx.globalAlpha = st ? 1 : (n.l === 'transport' ? .3 : .7);
       ctx.fill(); ctx.globalAlpha = 1;
-      if (st && n.k === 'hospital') {
-        ctx.beginPath(); ctx.arc(X(n), Y(n), 8, 0, 6.2832);
-        ctx.strokeStyle = col('alarm'); ctx.lineWidth = 1.4; ctx.stroke();
+      if (st && n.k === 'hospital') {                 // a hospital going dark is the headline
+        ctx.beginPath(); ctx.arc(X(n), Y(n), 13, 0, 6.2832);
+        ctx.strokeStyle = col('crisis'); ctx.lineWidth = 2; ctx.stroke();
+        ctx.globalAlpha = .18; ctx.fillStyle = col('crisis'); ctx.fill(); ctx.globalAlpha = 1;
       }
       if (selected === n.id) {
         ctx.beginPath(); ctx.arc(X(n), Y(n), 11, 0, 6.2832);

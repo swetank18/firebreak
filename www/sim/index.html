@@ -39,7 +39,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 a{color:inherit}
 
-.app{display:flex;flex-direction:column;height:100dvh}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh}
 .console{display:grid;flex:1;min-height:0;
   grid-template-columns:minmax(0,1fr) 340px;
   grid-template-rows:minmax(0,1fr) auto auto;
@@ -138,25 +138,25 @@ table.bench tr.ceil td{background:var(--rule-2)}
 .viewwrap{grid-area:view;position:relative;min-width:0;min-height:0;overflow:hidden}
 #view{display:block;width:100%;height:100%}
 .overlay{position:absolute;pointer-events:none;font-size:11.5px}
-.waterbadge{left:14px;top:14px;background:color-mix(in srgb,var(--panel) 90%,transparent);
+.waterbadge{left:14px;top:14px;background:rgba(20,28,37,.90);
   border:1px solid var(--rule);border-left:3px solid var(--water);padding:8px 11px;line-height:1.5}
 .waterbadge .lvl{font-family:"IBM Plex Mono",monospace;font-size:22px;font-weight:600;color:var(--water)}
 .waterbadge .sub{color:var(--ink-3);font-size:10.5px}
 .legend3{position:absolute;left:14px;bottom:14px;display:flex;flex-direction:column;gap:3px;
-  background:color-mix(in srgb,var(--panel) 88%,transparent);border:1px solid var(--rule);padding:8px;
+  background:rgba(20,28,37,.90);border:1px solid var(--rule);padding:8px;
   pointer-events:auto}
 .legend3 button{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink-2);
   padding:2px 4px;text-align:left;width:100%}
 .legend3 button[aria-pressed="false"]{opacity:.35;text-decoration:line-through}
 .legend3 i{width:9px;height:9px;flex:none}
 .inspectbox{position:absolute;left:14px;top:70px;width:250px;pointer-events:auto;
-  background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--rule);
+  background:rgba(20,28,37,.90);border:1px solid var(--rule);
   padding:10px 12px;max-height:52%;overflow-y:auto}
 .inspectbox .kv{font-size:11.5px}
-.viewnote{right:14px;bottom:14px;background:color-mix(in srgb,var(--panel) 90%,transparent);
+.viewnote{right:14px;bottom:14px;background:rgba(20,28,37,.90);
   border:1px solid var(--rule);padding:7px 10px;max-width:250px;line-height:1.45;color:var(--ink-3)}
 .viewnote b{color:var(--safe);font-weight:600}
-.camhint{right:14px;top:14px;background:color-mix(in srgb,var(--panel) 82%,transparent);
+.camhint{right:14px;top:14px;background:rgba(20,28,37,.90);
   border:1px solid var(--rule);padding:6px 9px;color:var(--ink-3);pointer-events:auto}
 .camhint button{border:1px solid var(--rule);padding:2px 7px;margin-left:7px;font-size:11px}
 .nogl{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:30px;
@@ -214,8 +214,8 @@ table.bench tr.ceil td{background:var(--rule-2)}
 
 .beats{grid-area:beats;display:flex;background:var(--ink)}
 .beats button{flex:1;display:flex;align-items:baseline;gap:8px;justify-content:center;padding:9px 6px;
-  color:color-mix(in srgb,var(--ground) 70%,transparent);
-  border-right:1px solid color-mix(in srgb,var(--ground) 22%,transparent);font-size:12px}
+  color:rgba(244,246,248,.70);
+  border-right:1px solid rgba(244,246,248,.22);font-size:12px}
 .beats button:last-child{border-right:0}
 .beats button b{font-family:"IBM Plex Mono",monospace;font-size:11px;opacity:.7}
 .beats button[aria-pressed="true"]{background:var(--ground);color:var(--ink)}
