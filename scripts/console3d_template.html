@@ -28,12 +28,94 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 a{color:inherit}
 
-.console{display:grid;height:100dvh;
+.app{display:flex;flex-direction:column;height:100dvh}
+.console{display:grid;flex:1;min-height:0;
   grid-template-columns:minmax(0,1fr) 340px;
-  grid-template-rows:auto minmax(0,1fr) auto auto;
-  grid-template-areas:"head head" "view side" "time time" "beats beats"}
+  grid-template-rows:minmax(0,1fr) auto auto;
+  grid-template-areas:"view side" "time time" "beats beats"}
+.tabpanel{flex:1;min-height:0;display:flex;flex-direction:column}
+.tabpanel[hidden]{display:none}
+.sheet{flex:1;min-height:0;overflow-y:auto;padding:26px 30px 60px}
+.sheet h2{margin:0 0 4px;font-size:19px;letter-spacing:-.01em}
+.sheet .lede{color:var(--ink-2);max-width:70ch;margin:0 0 22px;font-size:13.5px;line-height:1.6}
+.tabs{display:flex;gap:0;margin-left:6px}
+.tabs button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+  padding:6px 11px;color:var(--ink-3);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button b{color:var(--ink-3);margin-right:5px;font-weight:500}
+.tabs button[aria-selected="true"] b{color:var(--accent)}
 
-.head{grid-area:head;display:flex;align-items:center;gap:16px;padding:10px 16px;
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:14px}
+.card{border:1px solid var(--rule);background:var(--panel);padding:14px 16px}
+.card.down{border-left:3px solid var(--alarm)}
+.card.ok{border-left:3px solid var(--safe)}
+.card h3{margin:0;font-size:13px;font-family:"IBM Plex Mono",monospace}
+.card .st{font-size:11px;letter-spacing:.09em;text-transform:uppercase;margin-top:3px;
+  font-family:"IBM Plex Mono",monospace}
+.card.down .st{color:var(--alarm)} .card.ok .st{color:var(--safe)}
+.gauge{margin-top:11px}
+.gauge .lab{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);
+  font-family:"IBM Plex Mono",monospace;margin-bottom:3px}
+.gauge .bar{height:7px;background:var(--rule-2);border:1px solid var(--rule)}
+.gauge .fill{height:100%;background:var(--safe)}
+.gauge .fill.low{background:var(--accent)} .gauge .fill.out{background:var(--alarm)}
+.dep{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;padding:4px 0;
+  border-bottom:1px solid var(--rule-2);font-family:"IBM Plex Mono",monospace}
+.dep:last-child{border-bottom:0}
+.dep .s-up{color:var(--safe)} .dep .s-down{color:var(--alarm)}
+
+.memo{max-width:900px;border:1px solid var(--ink);background:var(--panel)}
+.memo .mh{background:var(--ink);color:var(--ground);padding:14px 20px;text-align:center}
+.memo .mh .t{font-family:"IBM Plex Mono",monospace;letter-spacing:.14em;font-size:12px}
+.memo .mh .s{font-size:16px;font-weight:600;margin-top:3px}
+.memo .row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--rule)}
+.memo .row div{padding:9px 20px;font-size:12px;font-family:"IBM Plex Mono",monospace}
+.memo .row div:first-child{border-right:1px solid var(--rule)}
+.memo .sec{padding:16px 20px;border-bottom:1px solid var(--rule)}
+.memo .sec:last-child{border-bottom:0}
+.memo .sec h4{margin:0 0 7px;font-size:11px;letter-spacing:.11em;text-transform:uppercase;
+  font-family:"IBM Plex Mono",monospace;color:var(--ink-3)}
+.memo .sec p{margin:0 0 8px;font-size:13px;line-height:1.6;max-width:74ch}
+.memo .sec p:last-child{margin-bottom:0}
+.memo code{font-family:"IBM Plex Mono",monospace;font-size:12px}
+.printbtn{border:1px solid var(--ink);padding:6px 14px;font-family:"IBM Plex Mono",monospace;
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:16px}
+
+.chain{max-width:820px}
+.step{display:grid;grid-template-columns:74px 1fr;gap:16px;padding-bottom:4px}
+.step .when{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);
+  text-align:right;padding-top:10px}
+.step .body{border-left:2px solid var(--rule);padding:10px 0 18px 18px;position:relative}
+.step .body::before{content:"";position:absolute;left:-6px;top:14px;width:10px;height:10px;
+  border-radius:50%;background:var(--alarm);border:2px solid var(--panel)}
+.step.up .body::before{background:var(--safe)}
+.step .who{font-family:"IBM Plex Mono",monospace;font-size:13px;font-weight:600}
+.step .what{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+.step .gap{font-size:11px;color:var(--ink-3);font-family:"IBM Plex Mono",monospace;margin-top:5px}
+.step .tagd{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10px;
+  letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--accent);color:var(--accent);
+  padding:1px 6px;margin-top:6px}
+
+table.bench{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+table.bench th,table.bench td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule-2)}
+table.bench th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--rule)}
+table.bench td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.bench tr.ceil td{background:var(--rule-2)}
+.verdict{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;padding:2px 7px;border:1px solid currentColor;white-space:nowrap}
+.v-yes{color:var(--safe)} .v-no{color:var(--ink-3)} .v-base{color:var(--ink-3);border-color:transparent}
+.note{font-size:12px;color:var(--ink-2);line-height:1.6;max-width:74ch;margin:16px 0 0}
+.note b{color:var(--ink)}
+@media print{
+  body{overflow:visible;background:#fff;color:#000}
+  .head,.tabs,.printbtn,.beats,.time{display:none!important}
+  .tabpanel[hidden]{display:none!important}
+  .sheet{overflow:visible;padding:0}
+  .memo{border-color:#000} .memo .mh{background:#000}
+}
+
+.head{display:flex;align-items:center;gap:16px;padding:10px 16px;flex:none;
   border-bottom:2px solid var(--ink);background:var(--panel);flex-wrap:wrap}
 .wordmark{font-family:"IBM Plex Mono",monospace;font-weight:700;letter-spacing:.18em;font-size:15px}
 .head .where{color:var(--ink-3);font-size:12px}
@@ -56,6 +138,10 @@ a{color:inherit}
   padding:2px 4px;text-align:left;width:100%}
 .legend3 button[aria-pressed="false"]{opacity:.35;text-decoration:line-through}
 .legend3 i{width:9px;height:9px;flex:none}
+.inspectbox{position:absolute;left:14px;top:70px;width:250px;pointer-events:auto;
+  background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--rule);
+  padding:10px 12px;max-height:52%;overflow-y:auto}
+.inspectbox .kv{font-size:11.5px}
 .viewnote{right:14px;bottom:14px;background:color-mix(in srgb,var(--panel) 90%,transparent);
   border:1px solid var(--rule);padding:7px 10px;max-width:250px;line-height:1.45;color:var(--ink-3)}
 .viewnote b{color:var(--safe);font-weight:600}
@@ -125,22 +211,26 @@ a{color:inherit}
 .beats button[aria-pressed="true"] b{color:var(--accent);opacity:1}
 
 @media (max-width:900px){
-  .console{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 46vh auto auto auto;
-    grid-template-areas:"head" "view" "side" "time" "beats";overflow-y:auto}
+  .console{grid-template-columns:minmax(0,1fr);grid-template-rows:46vh auto auto auto;
+    grid-template-areas:"view" "side" "time" "beats";overflow-y:auto}
   body{overflow:auto}
   .beats button span{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
-<div class="console">
+<div class="app">
   <header class="head">
     <span class="wordmark">FIREBREAK</span>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Console sections"></nav>
     <span class="where mono" id="where"></span>
     <span class="clock" id="clock">T+00:00</span>
-    <a class="back" href="2d/">2D view</a>
+    <a class="back" href="2d/">2D failsafe</a>
     <a class="back" href="../">Write-up</a>
   </header>
+
+<div class="tabpanel" id="tab1" role="tabpanel">
+<div class="console">
 
   <div class="viewwrap">
     <canvas id="view" aria-label="Three-dimensional view of Chennai during the monsoon flood, with the water level rising over the city and infrastructure failing"></canvas>
@@ -152,6 +242,11 @@ a{color:inherit}
       <button id="resetCam">Reset view</button></div>
     <div class="legend3" id="legend3" role="group" aria-label="Show or hide layers"></div>
     <div class="overlay viewnote" id="viewnote" hidden></div>
+    <div class="inspectbox" id="inspectbox">
+      <dl class="kv" id="inspect"><dt>Click an asset</dt><dd>—</dd></dl>
+      <dl class="kv" id="cityStats" style="margin-top:9px;padding-top:9px;
+        border-top:1px solid var(--rule)"></dl>
+    </div>
     <div class="nogl" id="nogl"><div>
       <p><b>This view needs WebGL</b>, and this browser or machine has not provided it.</p>
       <p>The <a href="2d/">2D console</a> reads exactly the same scenario file and runs the same
@@ -161,11 +256,9 @@ a{color:inherit}
 
   <aside class="side">
     <div class="blk">
-      <h2>Counterfactual</h2>
+      <h2>Human impact</h2>
       <div class="runs" id="runs" role="group" aria-label="Choose which run to replay"></div>
-    </div>
-    <div class="blk">
-      <h2>As of the clock</h2>
+      <div style="height:10px"></div>
       <div class="counters">
         <div><div class="k">Assets down</div><div class="v" id="cFail">0</div></div>
         <div><div class="k">Hospitals</div><div class="v" id="cHosp" style="color:var(--alarm)">0</div></div>
@@ -181,17 +274,7 @@ a{color:inherit}
       <h2>Firebreak's action</h2>
       <div class="act" id="act"></div>
     </div>
-    <div class="blk">
-      <h2>Asset</h2>
-      <dl class="kv" id="inspect"><dt>Click an asset</dt><dd>—</dd></dl>
-    </div>
-    <div class="blk" style="border-bottom:0">
-      <h2>City</h2>
-      <dl class="kv" id="cityStats"></dl>
-      <p style="margin:9px 0 0;font-size:11px;color:var(--ink-3);line-height:1.5">
-        Terrain is the model's own elevation proxy — latitude, low ground to the south. Stated
-        in <code class="mono">LIMITATIONS.md</code>, and it is what the flood was computed against.</p>
-    </div>
+
   </aside>
 
   <div class="time">
@@ -214,9 +297,55 @@ a{color:inherit}
 
   <nav class="beats" id="beats" aria-label="Demo beats"></nav>
 </div>
+</div>
+
+<div class="tabpanel" id="tab2" role="tabpanel" hidden>
+  <div class="sheet">
+    <h2>Hospital lifelines</h2>
+    <p class="lede">What each hospital is standing on at this moment in the run, and which of
+    those things is already gone. The reserve is the asset's own <code>buffer_s</code> from the
+    city contract — how long it survives after its dependencies fail — and the route is the
+    diesel edge: a generator that needs a road to be refuelled.</p>
+    <div class="cards" id="hospitalCards"></div>
+    <p class="note" id="hospitalNote"></p>
+  </div>
+</div>
+
+<div class="tabpanel" id="tab3" role="tabpanel" hidden>
+  <div class="sheet">
+    <button class="printbtn" id="printMemo">Print / save as PDF</button>
+    <div class="memo" id="memo"></div>
+  </div>
+</div>
+
+<div class="tabpanel" id="tab4" role="tabpanel" hidden>
+  <div class="sheet">
+    <h2>Causal chain</h2>
+    <p class="lede">The path failure actually took to a hospital in this run, reconstructed from
+    the declared dependency edges and the recorded failure times. Pick a facility to trace it.</p>
+    <label class="speed" style="margin-bottom:18px;display:inline-flex">Trace
+      <select id="chainPick"></select></label>
+    <div class="chain" id="chain"></div>
+  </div>
+</div>
+
+<div class="tabpanel" id="tab5" role="tabpanel" hidden>
+  <div class="sheet">
+    <h2>Benchmark lab</h2>
+    <p class="lede">Held-out ablation, paired randomness, and the pre-registration diff. Every
+    figure here is read from <code>eval/results/</code> at build time, and the verdicts are
+    counted rather than asserted.</p>
+    <div id="bench"></div>
+  </div>
+</div>
+</div>
 
 <script src="vendor/three.min.js"></script>
 <script>
-const DATA = __DATA__;
+// Assigned onto window deliberately: `const` at top level of a classic script
+// creates a global binding but not a window property, and the tab module reads
+// window.DATA. Both are static build-time payloads.
+window.DATA = __DATA__;
+window.EVIDENCE = __EVIDENCE__;
 </script>
 <script src="app.js"></script>

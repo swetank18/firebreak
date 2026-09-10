@@ -20,6 +20,8 @@ import re
 import pytest
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
+# the console assigns onto window so the tab module can read it
+DATA_RE = r"(?:const|window\.)\s*DATA\s*=\s*(\{.*?\});\n"
 PITCH = REPO / "www" / "index.html"
 CONSOLE = REPO / "www" / "sim" / "index.html"          # 3D
 CONSOLE_APP = REPO / "www" / "sim" / "app.js"
@@ -79,7 +81,7 @@ def test_the_console_is_a_separate_url(pitch, console):
 
 
 def test_console_carries_all_three_runs(console):
-    m = re.search(r"const DATA = (\{.*?\});\n", console, re.S)
+    m = re.search(DATA_RE, console, re.S)
     assert m, "the console has no embedded scenario"
     d = json.loads(m.group(1))
     assert set(d["runs"]) == {"do_nothing", "firebreak", "human"}
@@ -124,7 +126,7 @@ def test_the_2d_fallback_exists_and_reads_the_same_scenario(console2d, console):
     disagree about what happened.
     """
     def payload(html: str) -> dict:
-        return json.loads(re.search(r"const DATA = (\{.*?\});\n", html, re.S).group(1))
+        return json.loads(re.search(DATA_RE, html, re.S).group(1))
 
     a, b = payload(console), payload(console2d)
     assert a["seed"] == b["seed"]
@@ -135,7 +137,7 @@ def test_the_2d_fallback_exists_and_reads_the_same_scenario(console2d, console):
 
 def test_the_flood_is_the_hazard_field_not_an_animation(console):
     """The water level shown is what the engine used to stress the assets."""
-    d = json.loads(re.search(r"const DATA = (\{.*?\});\n", console, re.S).group(1))
+    d = json.loads(re.search(DATA_RE, console, re.S).group(1))
     flood = d.get("flood")
     assert flood, "no flood field exported — the water would be decoration"
     assert len(flood["level"]) > 20 and flood["peak"] > 0
@@ -157,3 +159,32 @@ def test_the_renderer_computes_no_simulation_numbers(pitch, console):
         assert "person_hours*frac" not in html.replace(" ", ""), (
             f"{name} interpolates person-hours, which the simulation never reported"
         )
+
+
+def test_console_has_the_five_specified_tabs(console, app):
+    """ui/ spec: a 6-component core screen plus four dedicated deep-dive tabs."""
+    for probe in ('id="tab1"', 'id="tab2"', 'id="tab3"', 'id="tab4"', 'id="tab5"', 'id="tabs"'):
+        assert probe in console, f"missing {probe}"
+    for probe in ("Hospital lifelines", "Action plan", "Causal chain", "Benchmark lab"):
+        assert probe in app, f"tab '{probe}' is not built"
+
+
+def test_benchmark_tab_reads_the_real_ablation(console):
+    """The spec's mockups carry illustrative arm numbers that contradict what we
+    measured. The tab must render eval/results/, not the mockup."""
+    m = re.search(r"window\.EVIDENCE = (\{.*?\});\n", console, re.S)
+    assert m, "no evidence payload injected into the console"
+    ev = json.loads(m.group(1))
+    arms = {t["arm"]: t for t in ev["arms"]}
+    assert {"A0", "AR", "A1", "A2", "A3", "A4", "A6"} <= set(arms)
+    # the measured result, whichever way it went
+    for arm in ("A3", "A4"):
+        assert arms[arm]["p_holm"] is not None
+    assert ev["h1"]["anomaly"] < 0.60 and ev["h2"]["rel"] is not None
+    assert arms["A6"]["oracle_captured_pct"] == 100.0
+
+
+def test_the_memorandum_states_its_own_confidence(app):
+    """A directive that hides that its selection layer is unproven is not honest."""
+    assert "not distinguishable from" in app
+    assert "No model produced this text" in app or "no language model" in app.lower()

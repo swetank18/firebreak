@@ -219,7 +219,6 @@ def main() -> None:
     for n in d["nodes"]:
         n["lat"] = round(n["lat"], 4)
         n["lon"] = round(n["lon"], 4)
-        n.pop("buf", None)
     arms_rows, arms_caption = _arms()
     demo_rows, demo_caption = _demo(d)
     body = TPL.read_text()
@@ -255,7 +254,27 @@ def main() -> None:
 
     # ---- the 3D console: the flood over Chennai ----
     payload = json.dumps(d, separators=(",", ":"))
-    c3 = CONSOLE3D_TPL.read_text().replace("__DATA__", payload)
+    a, h1, h2, rec, rel = (_res("arms"), _res("h1"), _res("h2"),
+                           _res("recovery"), _res("realism"))
+    evidence = {
+        "arms": a["arms"], "n_scenarios": a["n_scenarios"], "budget": a["budget"],
+        "a5_note": a["A5_note"],
+        "h1": {"anomaly": h1["auc_anomaly_score"], "branching": h1["auc_branching_ratio"],
+               "centrality": h1["auc_static_betweenness"],
+               "health_anomaly": h1["label2_health_impact"]["auc_anomaly_score"],
+               "health_branching": h1["label2_health_impact"]["auc_branching_ratio"],
+               "passed": h1["H1_PASSED"], "h4": h1["H4"]},
+        "h2": {"learned": h2["rmse_learned"], "declared": h2["rmse_declared"],
+               "rel": h2["relative_improvement"], "passed": h2["H2_PASSED"]},
+        "recovery": {"precision": rec["precision"], "recall": rec["recall"], "f1": rec["f1"]},
+        "realism": {"passed": rel["PASSED"], "span": rel["span"], "tail_sd": rel["tail_sd"],
+                    "lr": rel["powerlaw_test_REPORTED_NOT_GATING"]["lr_vs_exponential"],
+                    "powerlaw": rel["powerlaw_test_REPORTED_NOT_GATING"]["powerlaw_favoured"],
+                    "contingency": rel["scenario_contingency"]},
+    }
+    c3 = (CONSOLE3D_TPL.read_text()
+          .replace("__DATA__", payload)
+          .replace("__EVIDENCE__", json.dumps(evidence, separators=(",", ":"))))
     left = set(re.findall(r"__[A-Z_]+__", c3))
     if left:
         raise SystemExit(f"unfilled placeholders in the 3D template: {sorted(left)}")

@@ -457,6 +457,7 @@
     var btns = document.querySelectorAll('#runs button');
     for (var i = 0; i < btns.length; i++)
       btns[i].setAttribute('aria-pressed', String(btns[i].dataset.run === runKey));
+    if (window.__tabs) window.__tabs.refresh();
   }
 
   // ------------------------------------------------------------- timeline
@@ -773,5 +774,280 @@
   if (q.get('play') === '1') play();
   raf = requestAnimationFrame(frame);
   window.__fb = { seekTo: seekTo, beat: beat, selectRun: selectRun,
-                  get clock() { return clock; }, waterLevel: waterLevel };
+                  get clock() { return clock; }, get runKey() { return runKey; },
+                  waterLevel: waterLevel };
+})();
+
+/* ---------------------------------------------------------------------------
+ * Tabs 2-5. Everything below reads the exported scenario and the evidence
+ * injected at build time; nothing is recomputed and nothing is typed in.
+ * ------------------------------------------------------------------------- */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return Number(n).toLocaleString(); };
+  var EV = window.EVIDENCE || {};
+  var D = window.DATA;
+  if (!D) return;
+
+  var byId = {}; D.nodes.forEach(function (n) { byId[n.id] = n; });
+  var depsOf = {};
+  (D.deps || []).forEach(function (e) {
+    (depsOf[e.s] = depsOf[e.s] || []).push(e.d);
+  });
+  function hhmm(t) {
+    return 'T+' + String(Math.floor(t / 3600)).padStart(2, '0') + ':' +
+           String(Math.floor((t % 3600) / 60)).padStart(2, '0');
+  }
+  function failTimes(runKey) {
+    var m = {};
+    (D.runs[runKey] ? D.runs[runKey].timeline : []).forEach(function (r) {
+      if (m[r.n] === undefined) m[r.n] = r.t;
+    });
+    return m;
+  }
+
+  // ---------------------------------------------------------------- tab bar
+  var TABS = [
+    ['Live canvas', 'tab1'], ['Hospital lifelines', 'tab2'],
+    ['Action plan', 'tab3'], ['Causal chain', 'tab4'], ['Benchmark lab', 'tab5']
+  ];
+  var active = 'tab1';
+  $('tabs').innerHTML = TABS.map(function (t, i) {
+    return '<button role="tab" data-tab="' + t[1] + '" aria-selected="' + (i === 0) +
+      '"><b>' + (i + 1) + '</b>' + t[0] + '</button>';
+  }).join('');
+  function showTab(id) {
+    active = id;
+    TABS.forEach(function (t) {
+      var panel = $(t[1]); if (panel) panel.hidden = (t[1] !== id);
+    });
+    Array.prototype.forEach.call($('tabs').querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.tab === id));
+    });
+    if (id === 'tab2') paintHospitals();
+    if (id === 'tab4') paintChain();
+    if (id !== 'tab1') window.dispatchEvent(new Event('resize'));
+  }
+  Array.prototype.forEach.call($('tabs').querySelectorAll('button'), function (b) {
+    b.addEventListener('click', function () { showTab(b.dataset.tab); });
+  });
+  // Ctrl/Alt + 1-5 switches tab, so plain 1-6 stay on the beats for the pitch.
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.altKey)) return;
+    if (e.key >= '1' && e.key <= '5') { e.preventDefault(); showTab('tab' + e.key); }
+  });
+
+  // ------------------------------------------------- tab 2: hospital lifelines
+  function paintHospitals() {
+    var run = (window.__fb && window.__fb.runKey) || 'do_nothing';
+    var clock = (window.__fb && window.__fb.clock) || 0;
+    var ft = failTimes(run);
+    var hosp = D.nodes.filter(function (n) { return n.k === 'hospital'; });
+    hosp.sort(function (a, b) {
+      var fa = ft[a.id] === undefined ? Infinity : ft[a.id];
+      var fb2 = ft[b.id] === undefined ? Infinity : ft[b.id];
+      return fa - fb2;
+    });
+    var down = 0;
+    $('hospitalCards').innerHTML = hosp.map(function (h) {
+      var isDown = ft[h.id] !== undefined && ft[h.id] <= clock;
+      if (isDown) down++;
+      var deps = (depsOf[h.id] || []).slice();
+      // the generator's own dependency is the diesel road
+      var gen = deps.filter(function (d) { return d.indexOf('health.gen_') === 0; })[0];
+      var road = gen ? (depsOf[gen] || [])[0] : null;
+      if (road) deps.push(road);
+      var reserveH = (h.buf || 0) / 3600;
+      // how much of the reserve is left: it burns only once a dependency is down
+      var firstDepDown = Infinity;
+      deps.forEach(function (d) {
+        if (ft[d] !== undefined && ft[d] < firstDepDown) firstDepDown = ft[d];
+      });
+      var burned = firstDepDown === Infinity ? 0 :
+        Math.max(0, Math.min(1, (clock - firstDepDown) / Math.max(h.buf, 1)));
+      var left = Math.max(0, 1 - burned);
+      var cls = left > 0.5 ? '' : (left > 0.15 ? 'low' : 'out');
+      return '<div class="card ' + (isDown ? 'down' : 'ok') + '">' +
+        '<h3>' + h.id + '</h3>' +
+        '<div class="st">' + (isDown ? 'offline since ' + hhmm(ft[h.id]) :
+          (firstDepDown <= clock ? 'running on reserve' : 'operational')) + '</div>' +
+        '<div class="gauge"><div class="lab"><span>reserve</span><span>' +
+          (left * reserveH).toFixed(1) + ' h of ' + reserveH.toFixed(1) + ' h</span></div>' +
+          '<div class="bar"><div class="fill ' + cls + '" style="width:' +
+          (left * 100).toFixed(0) + '%"></div></div></div>' +
+        '<div style="margin-top:12px">' + deps.map(function (d) {
+          var dn = ft[d] !== undefined && ft[d] <= clock;
+          return '<div class="dep"><span>' + d + '</span><span class="' +
+            (dn ? 's-down">down ' + hhmm(ft[d]) : 's-up">up') + '</span></div>';
+        }).join('') + '</div>' +
+        '<div style="margin-top:9px;font-size:11px;color:var(--ink-3)">serves ' +
+        fmt(h.pop) + ' people</div></div>';
+    }).join('');
+    $('hospitalNote').innerHTML = '<b>' + down + ' of ' + hosp.length +
+      ' hospitals are offline at ' + hhmm(clock) + '</b> in the &ldquo;' + run.replace('_', ' ') +
+      '&rdquo; run. The reserve bar is the asset&rsquo;s declared buffer burning down from the ' +
+      'moment its first dependency failed; the engine burns it faster under load and hazard, so ' +
+      'treat the bar as the shape of the drawdown rather than the exact minute.';
+  }
+
+  // ------------------------------------------------- tab 3: action memorandum
+  function paintMemo() {
+    var iv = D.intervention || {}, s0 = D.runs.do_nothing.summary,
+        sf = D.runs.firebreak.summary, sh = D.runs.human.summary;
+    var saved = s0.person_hours - sf.person_hours;
+    var mins = Math.round((iv.deadline_s || 0) / 60);
+    $('memo').innerHTML =
+      '<div class="mh"><div class="t">MUNICIPAL DISASTER MANAGEMENT AUTHORITY</div>' +
+      '<div class="s">Incident Action Plan &middot; Lifeline Cascade Directive</div></div>' +
+      '<div class="row"><div>INCIDENT &nbsp; monsoon inundation, ' + D.city + '</div>' +
+        '<div>CORRELATION &nbsp; ' + D.city + '-monsoon_flood-s' + D.seed + '</div></div>' +
+      '<div class="row"><div>DECISION TIME &nbsp; ' + hhmm(D.t_decide_s) + '</div>' +
+        '<div>HORIZON &nbsp; ' + (D.horizon_s / 3600) + ' h</div></div>' +
+      '<div class="sec"><h4>1 &nbsp; Threat assessment</h4><p>Branching-ratio analysis over a ' +
+        'kernel mined from ' + fmt(EV.n_scenarios || 0) + ' held-out scenarios identifies <code>' +
+        (D.pair ? D.pair.danger.id : 'n/a') + '</code> as supercritical (n = ' +
+        (D.pair ? D.pair.danger.br.toFixed(2) : '?') + '), against <code>' +
+        (D.pair ? D.pair.decoy.id : 'n/a') + '</code> at n = ' +
+        (D.pair ? D.pair.decoy.br.toFixed(2) : '?') + ' carrying an almost identical anomaly ' +
+        'score. Unmitigated, the run reaches ' + s0.hospitals_hit + ' hospitals and ' +
+        fmt(s0.people) + ' people.</p></div>' +
+      '<div class="sec"><h4>2 &nbsp; Directed intervention</h4><p>ACTION: <code>' +
+        (iv.kind || 'n/a') + '</code> on ' + (iv.targets || []).length +
+        ' assets, at a cost of ' + (iv.cost || 0) + ' units.</p><p>TARGETS: <code>' +
+        (iv.targets || []).join('</code>, <code>') + '</code></p>' +
+        '<p>EXPIRY: this option retains 90% of its value for <b>' + mins +
+        ' minutes</b> from the decision time. After that, order it anyway or accept the ' +
+        'do-nothing outcome; do not treat the deadline as a countdown to safety.</p></div>' +
+      '<div class="sec"><h4>3 &nbsp; Expected effect, and what it is measured against</h4><p>' +
+        'Re-running the identical seed with this action in place: <b>' +
+        fmt(Math.round(saved)) + ' person-hours of lost service avoided</b> (' +
+        fmt(Math.round(s0.person_hours)) + ' &rarr; ' + fmt(Math.round(sf.person_hours)) +
+        '), and ' + (s0.hospitals_hit - sf.hospitals_hit) + ' fewer hospitals offline.</p>' +
+        '<p>The same budget spent hardening the most critical assets instead leaves ' +
+        fmt(Math.round(sh.person_hours)) + ' person-hours lost &mdash; it does not stop the ' +
+        'cascade, because the hospitals were not what was failing first.</p></div>' +
+      '<div class="sec"><h4>4 &nbsp; Confidence, stated plainly</h4><p>' +
+        'This directive comes from one scenario. Across ' + (EV.n_scenarios || '?') +
+        ' held-out scenarios the counterfactual-search arm is <b>not distinguishable from ' +
+        'protecting five assets at random</b>, while static betweenness is. The prediction ' +
+        'layer is what the evidence supports (branching ratio AUC ' +
+        (EV.h1 ? EV.h1.branching.toFixed(3) : '?') + ' against ' +
+        (EV.h1 ? EV.h1.anomaly.toFixed(3) : '?') + ' for anomaly score); the selection layer ' +
+        'is not yet. See the benchmark tab before acting on this at scale.</p></div>' +
+      '<div class="sec"><h4>5 &nbsp; No model produced this text</h4><p>Every figure above is a ' +
+        'field in the exported scenario or in <code>eval/results/</code>. Kernel estimation is a ' +
+        'Hawkes counting estimator, the rollout is Monte Carlo, and the action was chosen by ' +
+        'enumeration and scoring. No language model is in this decision path.</p></div>';
+  }
+  $('printMemo').addEventListener('click', function () { window.print(); });
+
+  // ------------------------------------------------------ tab 4: causal chain
+  var hospList = D.nodes.filter(function (n) { return n.k === 'hospital'; });
+  $('chainPick').innerHTML = hospList.map(function (h) {
+    return '<option value="' + h.id + '">' + h.id + '</option>';
+  }).join('');
+  $('chainPick').addEventListener('change', paintChain);
+  function paintChain() {
+    var run = (window.__fb && window.__fb.runKey) || 'do_nothing';
+    var ft = failTimes(run);
+    var target = $('chainPick').value || (hospList[0] && hospList[0].id);
+    if (!target) return;
+    // Walk the declared dependency tree and keep whatever actually failed, in
+    // the order it failed. The edges are the contract's; the times are the run's.
+    var seen = {}, steps = [];
+    (function walk(id, depth) {
+      if (seen[id] || depth > 4) return;
+      seen[id] = 1;
+      if (ft[id] !== undefined) steps.push({ id: id, t: ft[id], depth: depth });
+      (depsOf[id] || []).forEach(function (d) { walk(d, depth + 1); });
+    })(target, 0);
+    steps.sort(function (a, b) { return a.t - b.t; });
+    if (!steps.length) {
+      $('chain').innerHTML = '<p class="note"><b>' + target + ' never failed in this run.</b> ' +
+        'Nothing it depends on went down inside the horizon.</p>';
+      return;
+    }
+    var prev = null;
+    $('chain').innerHTML = steps.map(function (st) {
+      var n = byId[st.id] || {}, gap = prev === null ? null : st.t - prev;
+      prev = st.t;
+      var isTarget = st.id === target;
+      var isRoad = n.l === 'transport';
+      return '<div class="step"><div class="when">' + hhmm(st.t) + '</div>' +
+        '<div class="body"><div class="who">' + st.id + '</div>' +
+        '<div class="what">' + (n.l || '?') + ' &middot; ' + (n.k || '?') +
+        (n.pop ? ' &middot; serves ' + fmt(n.pop) : '') + '</div>' +
+        (gap !== null ? '<div class="gap">&Delta;t ' + Math.round(gap / 60) +
+          ' min after the previous link</div>' : '') +
+        (isRoad ? '<div class="tagd">the diesel edge &mdash; it carries the fuel</div>' : '') +
+        (isTarget ? '<div class="tagd">facility lost</div>' : '') +
+        '</div></div>';
+    }).join('') +
+      '<p class="note">Reconstructed from declared dependency edges and recorded failure ' +
+      'times, not from a stored trace. A road appearing in this chain is the point of the ' +
+      'project: it serves nobody directly and it is upstream of a hospital, so no alarm ' +
+      'ranked by load would ever surface it.</p>';
+  }
+
+  // ----------------------------------------------------- tab 5: benchmark lab
+  function paintBench() {
+    var a = EV.arms || [], h1 = EV.h1 || {}, h2 = EV.h2 || {}, rl = EV.realism || {};
+    var rows = a.map(function (t) {
+      var v = t.role === 'baseline'
+        ? '<span class="verdict v-base">baseline</span>'
+        : (t.role === 'ceiling'
+            ? '<span class="verdict v-base">ceiling</span>'
+            : (t.significant_vs_chance
+                ? '<span class="verdict v-yes">beats chance</span>'
+                : '<span class="verdict v-no">not vs chance</span>'));
+      return '<tr' + (t.role === 'ceiling' ? ' class="ceil"' : '') + '>' +
+        '<td class="n">' + t.arm + '</td><td>' + t.mechanism.replace(/\*\*/g, '') + '</td>' +
+        '<td class="n">' + fmt(Math.round(t.prevented)) + '</td>' +
+        '<td class="n">' + t.oracle_captured_pct.toFixed(0) + '%</td>' +
+        '<td class="n">' + (t.p_holm === null || t.p_holm === undefined ? '—' :
+          t.p_holm.toFixed(3)) + '</td><td>' + v + '</td></tr>';
+    }).join('');
+    $('bench').innerHTML =
+      '<table class="bench"><thead><tr><th>Arm</th><th>Mechanism</th>' +
+      '<th>Damage prevented</th><th>% of oracle</th><th>p (Holm)</th>' +
+      '<th>Verdict vs chance</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<p class="note">' + (EV.n_scenarios || '?') + ' held-out scenarios, budget ' +
+      (EV.budget || '?') + ', paired randomness. Protecting five assets at random already ' +
+      'prevents damage, so <b>the only honest question is whether an arm beats that</b>; the ' +
+      'verdict is a Wilcoxon signed-rank test on the paired per-scenario difference, ' +
+      'Holm-corrected. ' + (EV.a5_note || '') + '</p>' +
+      '<h2 style="margin-top:30px">Pre-registration diff</h2>' +
+      '<table class="bench"><thead><tr><th>Hypothesis</th><th>Predicted</th>' +
+      '<th>Measured</th><th>Verdict</th></tr></thead><tbody>' +
+      row('H1 &mdash; anomaly score is at chance', 'AUC 0.45&ndash;0.60',
+          (h1.anomaly || 0).toFixed(3), 0.45 <= h1.anomaly && h1.anomaly <= 0.60) +
+      row('H1 &mdash; ours predicts it', 'AUC &ge; 0.80',
+          (h1.branching || 0).toFixed(3), h1.branching >= 0.80) +
+      row('H2 &mdash; mined kernel beats a declared matrix', '&ge; 15% lower RMSE',
+          ((h2.rel || 0) * 100).toFixed(1) + '%', !!h2.passed) +
+      row('H4 &mdash; kernel does NOT beat centrality on ranking', '&Delta; &le; 0.05 AUC',
+          (h1.h4 ? (h1.h4.delta > 0 ? '+' : '') + h1.h4.delta.toFixed(3) : '?'),
+          !!(h1.h4 && h1.h4.as_predicted)) +
+      row('Realism gate &mdash; power-law tail', 'Pareto &alpha; 1.3&ndash;2.5',
+          'LR ' + fmt(rl.lr) + ' (exponential)', !!rl.powerlaw) +
+      '</tbody></table>' +
+      '<p class="note"><b>Most of these went against us, and they are all here.</b> The one ' +
+      'that holds is the one the pitch rests on: ranking alerts by how loud they are predicts ' +
+      'catastrophe no better than a coin. H4 was written down <i>expecting</i> to lose and lost ' +
+      'in the direction we did not expect &mdash; the kernel beat centrality on ranking, and ' +
+      'then failed to beat chance at choosing where to act. A pre-registration you only publish ' +
+      'when it agrees with you is a press release.</p>';
+    function row(h, p, m, ok) {
+      return '<tr><td>' + h + '</td><td class="n">' + p + '</td><td class="n">' + m +
+        '</td><td><span class="verdict ' + (ok ? 'v-yes">holds' : 'v-no">does not hold') +
+        '</span></td></tr>';
+    }
+  }
+
+  paintMemo(); paintBench();
+  window.__tabs = { show: showTab, refresh: function () {
+    if (active === 'tab2') paintHospitals();
+    if (active === 'tab4') paintChain();
+  } };
 })();
